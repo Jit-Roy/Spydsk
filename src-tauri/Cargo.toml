@@ -1,13 +1,13 @@
 [package]
-name = "aethertree"
+name = "disklens"
 version = "0.1.0"
-description = "AetherTree - Modern High-Performance Disk Space Analyzer"
+description = "DiskLens - Modern High-Performance Disk Space Analyzer"
 authors = ["you"]
 edition = "2021"
-default-run = "aethertree"
+default-run = "disklens"
 
 [[bin]]
-name = "aethertree"
+name = "disklens"
 path = "src/main.rs"
 
 [lib]

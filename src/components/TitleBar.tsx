@@ -73,8 +73,8 @@ export const TitleBar: React.FC = () => {
         data-tauri-drag-region
         onDoubleClick={handleTitleBarDoubleClick}
       >
-        <img src={appLogo} alt="AetherTree" className="titlebar-app-icon" data-tauri-drag-region />
-        <span className="titlebar-app-title" data-tauri-drag-region>AetherTree</span>
+        <img src={appLogo} alt="DiskLens" className="titlebar-app-icon" data-tauri-drag-region />
+        <span className="titlebar-app-title" data-tauri-drag-region>DiskLens</span>
       </div>
 
       {/* Right Controls: Native Window Controls (Min, Max, Close) */}

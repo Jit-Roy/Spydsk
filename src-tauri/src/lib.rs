@@ -39,5 +39,5 @@ pub fn run() {
             purge_specific_paths,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running AetherTree application");
+        .expect("error while running DiskLens application");
 }

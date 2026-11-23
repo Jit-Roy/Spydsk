@@ -1,4 +1,4 @@
-# AetherTree — Modern High-Performance Disk Space Analyzer
+# DiskLens — Modern High-Performance Disk Space Analyzer
 
 A blazing-fast, modern disk space analyzer and cleanup utility built with **Rust (Engine)** and **Tauri v2 + React + TypeScript (UI)**. Designed with a dark monochrome Windows 11 Fluent aesthetic.
 
@@ -47,7 +47,7 @@ npm run build:release
 ```
 The final standalone executable will be output directly to:
 ```
-dist/AetherTree.exe
+dist/DiskLens.exe
 ```
 
 ---
