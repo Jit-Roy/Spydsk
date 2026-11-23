@@ -32,8 +32,11 @@ export const TitleBar: React.FC = () => {
 
   return (
     <header className="custom-titlebar" data-tauri-drag-region>
-      {/* Left Draggable Area */}
-      <div className="titlebar-left" data-tauri-drag-region />
+      {/* Left Draggable Area with App Logo & Title */}
+      <div className="titlebar-left" data-tauri-drag-region>
+        <img src="/src/assets/logo.svg" alt="AetherTree" className="titlebar-app-icon" data-tauri-drag-region />
+        <span className="titlebar-app-title" data-tauri-drag-region>AetherTree</span>
+      </div>
 
       {/* Right Controls: Native Window Controls (Min, Max, Close) */}
       <div className="titlebar-right">

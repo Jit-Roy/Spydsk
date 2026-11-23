@@ -53,8 +53,27 @@ body,
 }
 
 .titlebar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   flex: 1;
   height: 100%;
+  user-select: none;
+}
+
+.titlebar-app-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  pointer-events: none;
+}
+
+.titlebar-app-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  letter-spacing: 0.3px;
+  pointer-events: none;
 }
 
 .titlebar-center {

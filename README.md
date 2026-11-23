@@ -43,8 +43,11 @@ npm run tauri dev
 ### Production Build
 Build the optimized standalone Windows `.exe` application:
 ```bash
-npm run build
-cargo build --release --manifest-path src-tauri/Cargo.toml
+npm run build:release
+```
+The final standalone executable will be output directly to:
+```
+dist/AetherTree.exe
 ```
 
 ---
