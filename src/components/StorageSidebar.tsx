@@ -5,7 +5,7 @@ import {
   Terminal,
   Copy,
   Trash2,
-  FolderPlus,
+  Archive,
   HardDrive,
   ChevronDown,
   Settings,
@@ -61,7 +61,7 @@ export const StorageSidebar: React.FC<StorageSidebarProps> = ({
     {
       key: 'space_saver',
       label: 'Space Saver',
-      icon: <FolderPlus size={16} />,
+      icon: <Archive size={16} />,
     },
   ];
 

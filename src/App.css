@@ -1469,6 +1469,256 @@ body,
   transform: translateY(-1px);
 }
 
+/* ==========================================================================
+   Space Saver & Disk Reducer View Styles (Airy, Spacious 2-Line Cards)
+   ========================================================================== */
+.saver-items-scroll {
+  padding: 14px 20px 24px 20px;
+  gap: 8px;
+}
+
+.saver-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background-color: #111115;
+  border: 1px solid #1c1c24;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  user-select: none;
+  box-sizing: border-box;
+  gap: 16px;
+}
+
+.saver-card:hover {
+  background-color: #16161c;
+  border-color: #2c2c3a;
+}
+
+.saver-card.selected {
+  background-color: #1e1e28 !important;
+  border-color: #3f3f54 !important;
+}
+
+.saver-card-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.saver-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: 7px;
+  background-color: #181820;
+  border: 1px solid #242430;
+  flex-shrink: 0;
+}
+
+.saver-card.selected .saver-icon-wrapper {
+  background-color: #272736;
+  border-color: #4a4a62;
+}
+
+.saver-text-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.saver-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.saver-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.1px;
+}
+
+.saver-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  background-color: #1c1c26;
+  border: 1px solid #282838;
+  border-radius: 4px;
+  color: #a1a1aa;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.saver-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  background-color: #202028;
+  border: 1px solid #323240;
+  border-radius: 4px;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.saver-path-row {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.saver-path {
+  font-size: 11.5px;
+  color: #71717a;
+  font-family: 'Consolas', 'Courier New', monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.saver-card.selected .saver-path {
+  color: #9494a5;
+}
+
+.saver-card-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-shrink: 0;
+}
+
+.saver-stats-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.saver-compressed-size {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.2px;
+}
+
+.saver-orig-size {
+  font-size: 11.5px;
+  color: #71717a;
+  font-variant-numeric: tabular-nums;
+}
+
+.saver-card.selected .saver-orig-size {
+  color: #a1a1aa;
+}
+
+.saver-savings-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background-color: #181820;
+  border: 1px solid #282834;
+  color: #e4e4e7;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  min-width: 88px;
+  text-align: center;
+}
+
+.saver-card.selected .saver-badge {
+  background-color: #ffffff;
+  border-color: #ffffff;
+  color: #000000;
+}
+
+.saver-card.selected .saver-savings-pill {
+  background-color: #2c2c3c;
+  border-color: #4c4c64;
+  color: #ffffff;
+}
+
+.saver-options-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.saver-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  background-color: #141418;
+  border: 1px solid #24242c;
+  border-radius: 8px;
+  padding: 3px;
+  gap: 3px;
+}
+
+.saver-mode-pill {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: #8e8e99;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.saver-mode-pill:hover {
+  color: #ffffff;
+}
+
+.saver-mode-pill.active {
+  background-color: #24242e;
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.saver-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #a1a1aa;
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.saver-checkbox-label input {
+  accent-color: #ffffff;
+  cursor: pointer;
+  margin: 0;
+}
+
 .clean-purge-btn:active:not(:disabled) {
   transform: translateY(0);
 }

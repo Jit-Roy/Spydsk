@@ -1748,3 +1748,291 @@ pub async fn purge_specific_paths(paths: Vec<String>) -> Result<(u64, usize), St
     }
     Ok((freed, count))
 }
+
+fn find_space_saver_candidates(
+    root: &std::path::Path,
+    max_depth: usize,
+    current_depth: usize,
+    results: &mut Vec<crate::models::SpaceSaverItem>,
+) {
+    if current_depth > max_depth {
+        return;
+    }
+
+    let entries = match std::fs::read_dir(root) {
+        Ok(e) => e,
+        Err(_) => return,
+    };
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let name = entry.file_name().to_string_lossy().to_string();
+
+        if name.starts_with('$')
+            || name == "System Volume Information"
+            || name == "Windows"
+            || name == "node_modules"
+            || name == ".git"
+        {
+            continue;
+        }
+
+        let meta = match entry.metadata() {
+            Ok(m) => m,
+            Err(_) => continue,
+        };
+
+        if meta.is_dir() {
+            if current_depth >= 1 && current_depth <= 3 {
+                let (dir_size, dir_files) = get_dir_size_and_count_shallow(&path, 3);
+                if dir_size >= 40 * 1024 * 1024 && dir_files > 3 {
+                    let ratio_pct = 50u32;
+                    let savings = (dir_size * ratio_pct as u64) / 100;
+                    results.push(crate::models::SpaceSaverItem {
+                        id: format!("dir_{}", path.to_string_lossy()),
+                        name: name.clone(),
+                        path: path.to_string_lossy().to_string(),
+                        is_dir: true,
+                        original_size_bytes: dir_size,
+                        estimated_compressed_bytes: dir_size - savings,
+                        estimated_savings_bytes: savings,
+                        compression_ratio_pct: ratio_pct,
+                        category: "Bulky Folder".to_string(),
+                        file_count: dir_files,
+                        is_selected: true,
+                    });
+                    continue;
+                }
+            }
+
+            find_space_saver_candidates(&path, max_depth, current_depth + 1, results);
+        } else {
+            let file_size = meta.len();
+            if file_size >= 15 * 1024 * 1024 {
+                let ext = path
+                    .extension()
+                    .and_then(|e| e.to_str())
+                    .map(|s| s.to_ascii_lowercase())
+                    .unwrap_or_default();
+
+                let (is_candidate, ratio_pct, category) = match ext.as_str() {
+                    "log" | "txt" | "json" | "xml" | "yaml" | "yml" => (true, 75u32, "Log / Text"),
+                    "csv" | "sql" | "dump" | "bak" | "dat" | "db" => (true, 65u32, "Database / Dataset"),
+                    "bmp" | "wav" | "raw" | "tga" | "psd" => (true, 60u32, "Uncompressed Media"),
+                    "iso" | "vmdk" | "vdi" | "qcow2" | "img" => (true, 40u32, "Disk Image / VM"),
+                    "tar" => (true, 50u32, "Uncompressed Archive"),
+                    "exe" | "dll" | "pdb" | "bin" => (true, 45u32, "Binary / Executable"),
+                    _ => {
+                        if file_size >= 50 * 1024 * 1024
+                            && !matches!(
+                                ext.as_str(),
+                                "zip" | "7z" | "rar" | "gz" | "xz" | "bz2" | "mp4" | "mkv" | "jpg" | "jpeg" | "png" | "webp" | "mp3" | "aac"
+                            )
+                        {
+                            (true, 40u32, "Large File")
+                        } else {
+                            (false, 0u32, "")
+                        }
+                    }
+                };
+
+                if is_candidate {
+                    let savings = (file_size * ratio_pct as u64) / 100;
+                    results.push(crate::models::SpaceSaverItem {
+                        id: format!("file_{}", path.to_string_lossy()),
+                        name: name.clone(),
+                        path: path.to_string_lossy().to_string(),
+                        is_dir: false,
+                        original_size_bytes: file_size,
+                        estimated_compressed_bytes: file_size - savings,
+                        estimated_savings_bytes: savings,
+                        compression_ratio_pct: ratio_pct,
+                        category: category.to_string(),
+                        file_count: 1,
+                        is_selected: true,
+                    });
+                }
+            }
+        }
+    }
+}
+
+#[tauri::command]
+pub async fn space_saver_scan(drive: String) -> Result<crate::models::SpaceSaverResult, String> {
+    let start_time = std::time::Instant::now();
+    let drive_letter = drive.chars().next().unwrap_or('C').to_ascii_uppercase();
+
+    let mut scan_roots = Vec::new();
+    if drive_letter == 'C' {
+        let user_profile = std::env::var("USERPROFILE").unwrap_or_else(|_| "C:\\Users\\Default".to_string());
+        let up = std::path::PathBuf::from(&user_profile);
+        for candidate in ["Downloads", "Documents", "Desktop", "Saved Games", "Videos", "Projects", "Personal Projects", "source", "dev"] {
+            let p = up.join(candidate);
+            if p.exists() {
+                scan_roots.push((p, 4));
+            }
+        }
+        let crash_dumps = std::path::PathBuf::from(std::env::var("LOCALAPPDATA").unwrap_or_else(|_| "C:\\Users\\Default\\AppData\\Local".to_string())).join("CrashDumps");
+        if crash_dumps.exists() {
+            scan_roots.push((crash_dumps, 2));
+        }
+        let prog_data = std::path::PathBuf::from(std::env::var("ProgramData").unwrap_or_else(|_| "C:\\ProgramData".to_string()));
+        if prog_data.exists() {
+            scan_roots.push((prog_data, 2));
+        }
+    } else {
+        scan_roots.push((std::path::PathBuf::from(format!("{}:\\", drive_letter)), 3));
+    }
+
+    let mut all_items = Vec::new();
+    for (root, depth) in scan_roots {
+        let mut root_items = Vec::new();
+        find_space_saver_candidates(&root, depth, 0, &mut root_items);
+        all_items.extend(root_items);
+    }
+
+    all_items.sort_by_key(|a| std::cmp::Reverse(a.estimated_savings_bytes));
+    if all_items.len() > 100 {
+        all_items.truncate(100);
+    }
+
+    let total_original_bytes = all_items.iter().map(|i| i.original_size_bytes).sum();
+    let total_estimated_compressed_bytes = all_items.iter().map(|i| i.estimated_compressed_bytes).sum();
+    let total_estimated_savings_bytes = all_items.iter().map(|i| i.estimated_savings_bytes).sum();
+    let total_items = all_items.len();
+    let elapsed_ms = start_time.elapsed().as_millis() as u64;
+
+    Ok(crate::models::SpaceSaverResult {
+        total_original_bytes,
+        total_estimated_compressed_bytes,
+        total_estimated_savings_bytes,
+        total_items,
+        items: all_items,
+        elapsed_ms,
+    })
+}
+
+#[tauri::command]
+pub async fn space_saver_compress(
+    options: crate::models::SpaceSaverCompressOptions,
+) -> Result<crate::models::SpaceSaverCompressResult, String> {
+    #[cfg(windows)]
+    use std::os::windows::process::CommandExt;
+    const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+    let mut processed_count = 0usize;
+    let mut original_bytes = 0u64;
+    let mut final_bytes = 0u64;
+    let mut freed_bytes = 0u64;
+
+    for path_str in &options.paths {
+        let p = std::path::Path::new(path_str);
+        if !p.exists() {
+            continue;
+        }
+
+        let is_dir = p.is_dir();
+        let orig_sz = if is_dir {
+            let (sz, _) = get_dir_size_and_count_shallow(p, 4);
+            sz
+        } else {
+            p.metadata().map(|m| m.len()).unwrap_or(0)
+        };
+
+        if options.mode == "zip" {
+            let parent = p.parent().unwrap_or(std::path::Path::new("."));
+            let file_stem = p.file_stem().and_then(|s| s.to_str()).unwrap_or("archive");
+            let mut zip_dest = parent.join(format!("{}.zip", file_stem));
+            if zip_dest.exists() {
+                let ts = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+                zip_dest = parent.join(format!("{}_{}.zip", file_stem, ts));
+            }
+
+            let zip_str = zip_dest.to_string_lossy().to_string();
+            let name_str = p.file_name().and_then(|s| s.to_str()).unwrap_or(path_str);
+
+            let mut success = false;
+            let tar_result = std::process::Command::new("tar.exe")
+                .creation_flags(CREATE_NO_WINDOW)
+                .args(["-a", "-c", "-f", &zip_str, name_str])
+                .current_dir(parent)
+                .status();
+
+            if let Ok(st) = tar_result {
+                if st.success() && zip_dest.exists() {
+                    success = true;
+                }
+            }
+
+            if !success {
+                let script = format!(
+                    "Compress-Archive -LiteralPath '{}' -DestinationPath '{}' -Force",
+                    path_str.replace('\'', "''"),
+                    zip_str.replace('\'', "''")
+                );
+                let ps_result = std::process::Command::new("powershell")
+                    .creation_flags(CREATE_NO_WINDOW)
+                    .args(["-NoProfile", "-NonInteractive", "-Command", &script])
+                    .status();
+
+                if let Ok(st) = ps_result {
+                    if st.success() && zip_dest.exists() {
+                        success = true;
+                    }
+                }
+            }
+
+            if success {
+                let zip_len = zip_dest.metadata().map(|m| m.len()).unwrap_or(0);
+                original_bytes += orig_sz;
+                final_bytes += zip_len;
+                processed_count += 1;
+
+                if options.remove_original {
+                    let _ = delete_to_trash(path_str.clone());
+                    freed_bytes += orig_sz.saturating_sub(zip_len);
+                }
+            }
+        } else if options.mode == "compact" {
+            let target_arg = if is_dir {
+                format!("{}\\*", path_str)
+            } else {
+                path_str.to_string()
+            };
+
+            let mut cmd = std::process::Command::new("compact.exe");
+            cmd.creation_flags(CREATE_NO_WINDOW);
+            if is_dir {
+                cmd.args(["/C", "/S", "/I", "/EXE:LZX", &target_arg]);
+            } else {
+                cmd.args(["/C", "/EXE:LZX", &target_arg]);
+            }
+
+            if let Ok(st) = cmd.status() {
+                if st.success() {
+                    processed_count += 1;
+                    original_bytes += orig_sz;
+                    let estimated_compressed = (orig_sz * 55) / 100;
+                    final_bytes += estimated_compressed;
+                    freed_bytes += orig_sz.saturating_sub(estimated_compressed);
+                }
+            }
+        }
+    }
+
+    let mode_label = if options.mode == "zip" { "ZIP Archive" } else { "NTFS LZX Compression" };
+    let message = if options.remove_original && options.mode == "zip" {
+        format!("Successfully created {} {} archive(s) and moved original files to Recycle Bin.", processed_count, mode_label)
+    } else {
+        format!("Successfully processed {} item(s) using {}.", processed_count, mode_label)
+    };
+
+    Ok(crate::models::SpaceSaverCompressResult {
+        success: true,
+        processed_count,
+        original_bytes,
+        final_bytes,
+        freed_bytes,
+        message,
+    })
+}

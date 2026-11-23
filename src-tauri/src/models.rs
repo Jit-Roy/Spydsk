@@ -160,3 +160,45 @@ pub struct CategoryChildItem {
     pub size_bytes: u64,
     pub file_count: usize,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SpaceSaverItem {
+    pub id: String,
+    pub name: String,
+    pub path: String,
+    pub is_dir: bool,
+    pub original_size_bytes: u64,
+    pub estimated_compressed_bytes: u64,
+    pub estimated_savings_bytes: u64,
+    pub compression_ratio_pct: u32,
+    pub category: String,
+    pub file_count: usize,
+    pub is_selected: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SpaceSaverResult {
+    pub total_original_bytes: u64,
+    pub total_estimated_compressed_bytes: u64,
+    pub total_estimated_savings_bytes: u64,
+    pub total_items: usize,
+    pub items: Vec<SpaceSaverItem>,
+    pub elapsed_ms: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SpaceSaverCompressOptions {
+    pub paths: Vec<String>,
+    pub mode: String,
+    pub remove_original: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SpaceSaverCompressResult {
+    pub success: bool,
+    pub processed_count: usize,
+    pub original_bytes: u64,
+    pub final_bytes: u64,
+    pub freed_bytes: u64,
+    pub message: String,
+}

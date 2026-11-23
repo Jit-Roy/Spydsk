@@ -132,3 +132,41 @@ export interface DuplicateFinderResult {
   groups: DuplicateGroup[];
   elapsed_ms: number;
 }
+
+export interface SpaceSaverItem {
+  id: string;
+  name: string;
+  path: string;
+  is_dir: boolean;
+  original_size_bytes: number;
+  estimated_compressed_bytes: number;
+  estimated_savings_bytes: number;
+  compression_ratio_pct: number;
+  category: string;
+  file_count: number;
+  is_selected: boolean;
+}
+
+export interface SpaceSaverResult {
+  total_original_bytes: number;
+  total_estimated_compressed_bytes: number;
+  total_estimated_savings_bytes: number;
+  total_items: number;
+  items: SpaceSaverItem[];
+  elapsed_ms: number;
+}
+
+export interface SpaceSaverCompressOptions {
+  paths: string[];
+  mode: 'zip' | 'compact';
+  remove_original: boolean;
+}
+
+export interface SpaceSaverCompressResult {
+  success: boolean;
+  processed_count: number;
+  original_bytes: number;
+  final_bytes: number;
+  freed_bytes: number;
+  message: string;
+}

@@ -37,6 +37,8 @@ pub fn run() {
             duplicate_purge,
             list_category_children,
             purge_specific_paths,
+            space_saver_scan,
+            space_saver_compress,
         ])
         .run(tauri::generate_context!())
         .expect("error while running DiskLens application");

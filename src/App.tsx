@@ -6,7 +6,7 @@ import {
   Terminal,
   Copy,
   Trash2,
-  FolderPlus,
+  Archive,
   CheckCircle2,
   Loader2,
   AlertTriangle,
@@ -29,6 +29,9 @@ import {
   DevCleanResult,
   DuplicateFinderResult,
   CategoryChildItem,
+  SpaceSaverResult,
+  SpaceSaverCompressOptions,
+  SpaceSaverCompressResult,
 } from './types';
 import { formatBytes } from './utils';
 import './App.css';
@@ -67,6 +70,14 @@ export const App: React.FC = () => {
   const [isDupPurging, setIsDupPurging] = useState<boolean>(false);
   const [dupPurgeSuccessMsg, setDupPurgeSuccessMsg] = useState<string | null>(null);
   const [collapsedDupGroups, setCollapsedDupGroups] = useState<{ [groupId: string]: boolean }>({});
+
+  // Space Saver & Compression state
+  const [spaceSaverResult, setSpaceSaverResult] = useState<SpaceSaverResult | null>(null);
+  const [selectedSpaceSaverItems, setSelectedSpaceSaverItems] = useState<{ [id: string]: boolean }>({});
+  const [spaceSaverMode, setSpaceSaverMode] = useState<'zip' | 'compact'>('zip');
+  const [spaceSaverRemoveOriginal, setSpaceSaverRemoveOriginal] = useState<boolean>(true);
+  const [isCompressing, setIsCompressing] = useState<boolean>(false);
+  const [compressSuccessMsg, setCompressSuccessMsg] = useState<string | null>(null);
 
   // Granular Category Child & Expansion state across cleaning views
   const [expandedCategories, setExpandedCategories] = useState<{ [id: string]: boolean }>({});
@@ -174,6 +185,22 @@ export const App: React.FC = () => {
         setSelectedDuplicateFiles({});
       } catch (err) {
         console.error('Duplicate scan error:', err);
+      } finally {
+        setIsScanning(false);
+      }
+    } else if (activeMode === 'space_saver') {
+      setIsScanning(true);
+      setCompressSuccessMsg(null);
+      try {
+        const result: SpaceSaverResult = await invoke('space_saver_scan', { drive: selectedPath });
+        setSpaceSaverResult(result);
+        const initialSelected: { [id: string]: boolean } = {};
+        result.items.forEach((item) => {
+          initialSelected[item.id] = true;
+        });
+        setSelectedSpaceSaverItems(initialSelected);
+      } catch (err) {
+        console.error('Space saver scan error:', err);
       } finally {
         setIsScanning(false);
       }
@@ -536,7 +563,7 @@ export const App: React.FC = () => {
           handleStartScan();
         } else if (activeMode === 'duplicates' && duplicateResult === null) {
           handleStartScan();
-        } else if (activeMode === 'space_saver') {
+        } else if (activeMode === 'space_saver' && spaceSaverResult === null) {
           handleStartScan();
         }
       }
@@ -552,6 +579,7 @@ export const App: React.FC = () => {
     deepCleanResult,
     devCleanResult,
     duplicateResult,
+    spaceSaverResult,
     handleStartScan,
   ]);
 
@@ -577,6 +605,9 @@ export const App: React.FC = () => {
     setDevPurgeSuccessMsg(null);
     setDuplicateResult(null);
     setDupPurgeSuccessMsg(null);
+    setSpaceSaverResult(null);
+    setCompressSuccessMsg(null);
+    setSelectedSpaceSaverItems({});
     setExpandedCategories({});
     setCategoryChildren({});
     setLoadingChildren({});
@@ -650,6 +681,58 @@ export const App: React.FC = () => {
         return sum + groupWasted;
       }, 0)
     : 0;
+
+  // Space Saver handlers & calculations
+  const toggleSpaceSaverItem = (id: string) => {
+    setSelectedSpaceSaverItems((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
+  const selectedSpaceSaverCount = spaceSaverResult
+    ? spaceSaverResult.items.filter((i) => selectedSpaceSaverItems[i.id]).length
+    : 0;
+
+  const totalSelectedSavingsSize = spaceSaverResult
+    ? spaceSaverResult.items
+        .filter((i) => selectedSpaceSaverItems[i.id])
+        .reduce((sum, i) => sum + i.estimated_savings_bytes, 0)
+    : 0;
+
+  const handleCompressSpaceSaver = async () => {
+    if (!spaceSaverResult || isCompressing || selectedSpaceSaverCount === 0) return;
+    const pathsToCompress = spaceSaverResult.items
+      .filter((i) => selectedSpaceSaverItems[i.id])
+      .map((i) => i.path);
+
+    if (pathsToCompress.length === 0) return;
+
+    setIsCompressing(true);
+    setCompressSuccessMsg(null);
+
+    try {
+      const options: SpaceSaverCompressOptions = {
+        paths: pathsToCompress,
+        mode: spaceSaverMode,
+        remove_original: spaceSaverMode === 'zip' && spaceSaverRemoveOriginal,
+      };
+
+      const result: SpaceSaverCompressResult = await invoke('space_saver_compress', { options });
+      if (result.success) {
+        const freedFormatted = result.freed_bytes > 0 ? ` Freed ${formatBytes(result.freed_bytes)}.` : '';
+        setCompressSuccessMsg(`${result.message}${freedFormatted}`);
+        const updated: SpaceSaverResult = await invoke('space_saver_scan', { drive: selectedPath });
+        setSpaceSaverResult(updated);
+        setSelectedSpaceSaverItems({});
+      }
+    } catch (err) {
+      console.error('Compression error:', err);
+      setCompressSuccessMsg('Failed to compress selected items. Please check folder permissions.');
+    } finally {
+      setIsCompressing(false);
+    }
+  };
 
   const renderToolView = () => {
     switch (activeMode) {
@@ -1372,25 +1455,157 @@ export const App: React.FC = () => {
       case 'space_saver':
         return (
           <div className="tool-view-container">
-            <div className="tool-view-content">
-              <div className="tool-hero-box">
-                <div className="tool-hero-icon">
-                  <FolderPlus size={30} />
+            {isScanning && spaceSaverResult === null ? (
+              <div className="tool-view-content">
+                <div className="tool-hero-box">
+                  <div className="tool-hero-icon">
+                    <Loader2 size={30} className="spin-icon" />
+                  </div>
+                  <h2 className="tool-hero-title">Scanning Compressible Targets</h2>
+                  <p className="tool-hero-desc">
+                    Locating bulky folders, uncompressed datasets, large media, and compressible files across your drive...
+                  </p>
                 </div>
-                <h2 className="tool-hero-title">Space Saver & LZX Compression</h2>
-                <p className="tool-hero-desc">
-                  Reclaim storage on NTFS drives by transparently compressing rarely accessed binaries, game installations, and applications with zero performance loss.
-                </p>
-                <button
-                  type="button"
-                  className="canvas-hero-btn-filled"
-                  onClick={handleStartScan}
-                >
-                  <FolderPlus size={16} />
-                  <span>Analyze Compression</span>
-                </button>
               </div>
-            </div>
+            ) : spaceSaverResult === null ? (
+              <div className="tool-view-content">
+                <div className="tool-hero-box">
+                  <div className="tool-hero-icon">
+                    <Archive size={30} />
+                  </div>
+                  <h2 className="tool-hero-title">Space Saver & Disk Reducer</h2>
+                  <p className="tool-hero-desc">
+                    Reclaim gigabytes of storage by compressing bulky folders, datasets, and uncompressed files into standard ZIP archives or transparent Windows NTFS LZX blocks.
+                  </p>
+                  <button
+                    type="button"
+                    className="canvas-hero-btn-filled"
+                    onClick={handleStartScan}
+                  >
+                    <Archive size={16} />
+                    <span>Scan Compressible Targets</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="quick-clean-results">
+                <div className="clean-results-topbar">
+                  <div className="clean-topbar-left">
+                    <span className="clean-total-badge">
+                      <Archive size={14} />
+                      <span>{formatBytes(totalSelectedSavingsSize)} Est. Savings</span>
+                    </span>
+                    <span className="clean-scan-meta">
+                      {spaceSaverResult.total_items} candidates • {formatBytes(spaceSaverResult.total_original_bytes)} total
+                    </span>
+                  </div>
+                  <div className="clean-topbar-right">
+                    <div className="saver-options-group">
+                      <div className="saver-mode-toggle">
+                        <button
+                          type="button"
+                          className={`saver-mode-pill ${spaceSaverMode === 'zip' ? 'active' : ''}`}
+                          onClick={() => setSpaceSaverMode('zip')}
+                          title="Compress items into portable standard .zip files"
+                        >
+                          ZIP Archive
+                        </button>
+                        <button
+                          type="button"
+                          className={`saver-mode-pill ${spaceSaverMode === 'compact' ? 'active' : ''}`}
+                          onClick={() => setSpaceSaverMode('compact')}
+                          title="Compress items transparently in-place using Windows NTFS LZX"
+                        >
+                          NTFS Compact
+                        </button>
+                      </div>
+
+                      {spaceSaverMode === 'zip' && (
+                        <label className="saver-checkbox-label" title="Move original files to Recycle Bin after creating .zip archive">
+                          <input
+                            type="checkbox"
+                            checked={spaceSaverRemoveOriginal}
+                            onChange={(e) => setSpaceSaverRemoveOriginal(e.target.checked)}
+                          />
+                          <span>Recycle original</span>
+                        </label>
+                      )}
+
+                      <button
+                        type="button"
+                        className="clean-purge-btn"
+                        disabled={isCompressing || selectedSpaceSaverCount === 0}
+                        onClick={handleCompressSpaceSaver}
+                        title={spaceSaverMode === 'zip' ? 'Create ZIP archive for selected items' : 'Compress selected items using NTFS LZX'}
+                      >
+                        {isCompressing ? (
+                          <>
+                            <Loader2 size={14} className="spin-icon" />
+                            <span>Compressing...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Archive size={14} />
+                            <span>Compress Selected ({selectedSpaceSaverCount})</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {compressSuccessMsg && (
+                  <div className="clean-success-banner">
+                    <CheckCircle2 size={16} />
+                    <span>{compressSuccessMsg}</span>
+                  </div>
+                )}
+
+                <div className="clean-items-scroll saver-items-scroll">
+                  {spaceSaverResult.items.map((item) => {
+                    const isSelected = !!selectedSpaceSaverItems[item.id];
+                    return (
+                      <div
+                        key={item.id}
+                        className={`saver-card ${isSelected ? 'selected' : ''}`}
+                        title={item.path}
+                        onClick={() => toggleSpaceSaverItem(item.id)}
+                      >
+                        <div className="saver-card-left">
+                          <div className="saver-icon-wrapper">
+                            {item.is_dir ? (
+                              <Folder size={17} className="folder-icon" />
+                            ) : (
+                              <File size={17} className="clean-file-icon" />
+                            )}
+                          </div>
+                          <div className="saver-text-block">
+                            <div className="saver-title-row">
+                              <span className="saver-name">{item.name}</span>
+                              <span className="saver-tag">{item.category}</span>
+                              <span className="saver-badge">-{item.compression_ratio_pct}%</span>
+                            </div>
+                            <div className="saver-path-row">
+                              <span className="saver-path">{item.path}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="saver-card-right">
+                          <div className="saver-stats-block">
+                            <span className="saver-compressed-size">~{formatBytes(item.estimated_compressed_bytes)}</span>
+                            <span className="saver-orig-size">from {formatBytes(item.original_size_bytes)}</span>
+                          </div>
+                          <div className="saver-savings-pill">
+                            Save ~{formatBytes(item.estimated_savings_bytes)}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         );
 
