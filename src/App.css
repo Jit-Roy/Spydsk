@@ -33,7 +33,7 @@ body,
   height: 100vh;
   background-color: #0b0b0d;
   overflow: hidden;
-  border: 1px solid #1e1e22;
+  box-shadow: inset 0 0 0 1px #1e1e22;
 }
 
 /* ==========================================================================
@@ -46,7 +46,7 @@ body,
   height: 48px;
   min-height: 48px;
   background-color: #0b0b0d;
-  padding: 0 8px 0 16px;
+  padding: 0 0 0 16px;
   border-bottom: 1px solid #1a1a1e;
   z-index: 100;
   cursor: default;
@@ -239,24 +239,31 @@ body,
 /* Window Control Buttons */
 .titlebar-right {
   display: flex;
-  align-items: center;
-  gap: 4px;
+  align-items: stretch;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  gap: 0;
   flex: 1;
   justify-content: flex-end;
+  -webkit-app-region: no-drag;
 }
 
 .win-ctrl-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 30px;
+  width: 46px;
+  height: 100%;
   background: transparent;
   border: none;
   color: #8e8e99;
-  cursor: pointer;
-  border-radius: 5px;
-  transition: all 0.12s;
+  cursor: default;
+  border-radius: 0;
+  margin: 0;
+  padding: 0;
+  transition: background-color 0.1s ease, color 0.1s ease;
+  -webkit-app-region: no-drag;
 }
 
 .win-ctrl-btn:hover {
@@ -264,8 +271,17 @@ body,
   color: #ffffff;
 }
 
+.win-ctrl-btn:active {
+  background-color: #2e2e36;
+}
+
 .win-close-btn:hover {
   background-color: #c42b1c;
+  color: #ffffff;
+}
+
+.win-close-btn:active {
+  background-color: #a82315;
   color: #ffffff;
 }
 

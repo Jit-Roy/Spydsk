@@ -1,9 +1,31 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { Minus, Square, X } from 'lucide-react';
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import { Minus, Square, Copy, X } from 'lucide-react';
 import appLogo from '../assets/logo.svg';
 
 export const TitleBar: React.FC = () => {
+  const [isMaximized, setIsMaximized] = useState(false);
+
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    const checkMaximized = async () => {
+      try {
+        const appWindow = getCurrentWindow();
+        setIsMaximized(await appWindow.isMaximized());
+        unlisten = await appWindow.onResized(async () => {
+          setIsMaximized(await appWindow.isMaximized());
+        });
+      } catch (err) {
+        console.error('Failed to listen to window resize:', err);
+      }
+    };
+    checkMaximized();
+    return () => {
+      if (unlisten) unlisten();
+    };
+  }, []);
+
   const handleMinimize = async (e: React.MouseEvent) => {
     e.stopPropagation();
     try {
@@ -17,6 +39,8 @@ export const TitleBar: React.FC = () => {
     e.stopPropagation();
     try {
       await invoke('window_maximize');
+      const appWindow = getCurrentWindow();
+      setIsMaximized(await appWindow.isMaximized());
     } catch (err) {
       console.error('Maximize failed:', err);
     }
@@ -31,39 +55,60 @@ export const TitleBar: React.FC = () => {
     }
   };
 
+  const handleTitleBarDoubleClick = async () => {
+    try {
+      await invoke('window_maximize');
+      const appWindow = getCurrentWindow();
+      setIsMaximized(await appWindow.isMaximized());
+    } catch (err) {
+      console.error('Titlebar double click failed:', err);
+    }
+  };
+
   return (
-    <header className="custom-titlebar" data-tauri-drag-region>
-      {/* Left Draggable Area with App Logo & Title */}
-      <div className="titlebar-left" data-tauri-drag-region>
+    <header className="custom-titlebar">
+      {/* Draggable Area with App Logo & Title */}
+      <div
+        className="titlebar-left"
+        data-tauri-drag-region
+        onDoubleClick={handleTitleBarDoubleClick}
+      >
         <img src={appLogo} alt="AetherTree" className="titlebar-app-icon" data-tauri-drag-region />
         <span className="titlebar-app-title" data-tauri-drag-region>AetherTree</span>
       </div>
 
       {/* Right Controls: Native Window Controls (Min, Max, Close) */}
-      <div className="titlebar-right">
+      <div className="titlebar-right" data-tauri-drag-region="false">
         <button
           type="button"
           className="win-ctrl-btn"
           onClick={handleMinimize}
           title="Minimize"
+          data-tauri-drag-region="false"
         >
-          <Minus size={14} />
+          <Minus size={14} strokeWidth={1.5} />
         </button>
         <button
           type="button"
           className="win-ctrl-btn"
           onClick={handleMaximize}
-          title="Maximize"
+          title={isMaximized ? "Restore Down" : "Maximize"}
+          data-tauri-drag-region="false"
         >
-          <Square size={12} />
+          {isMaximized ? (
+            <Copy size={11} strokeWidth={1.5} />
+          ) : (
+            <Square size={12} strokeWidth={1.5} />
+          )}
         </button>
         <button
           type="button"
           className="win-ctrl-btn win-close-btn"
           onClick={handleClose}
           title="Close"
+          data-tauri-drag-region="false"
         >
-          <X size={14} />
+          <X size={14} strokeWidth={1.5} />
         </button>
       </div>
     </header>
