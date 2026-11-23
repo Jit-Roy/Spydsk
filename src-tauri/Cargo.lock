@@ -811,7 +811,6 @@ dependencies = [
 name = "disklens"
 version = "0.1.0"
 dependencies = [
- "crossbeam-channel",
  "crossbeam-deque",
  "rayon",
  "serde",
@@ -819,7 +818,6 @@ dependencies = [
  "tauri",
  "tauri-build",
  "tauri-plugin-opener",
- "walkdir",
  "windows-sys 0.59.0",
 ]
 

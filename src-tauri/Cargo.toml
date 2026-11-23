@@ -23,8 +23,6 @@ tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 rayon = "1.10"
-walkdir = "2.5"
-crossbeam-channel = "0.5"
 crossbeam-deque = "0.8"
 
 [target.'cfg(windows)'.dependencies]

@@ -17,11 +17,13 @@ use crate::models::{CleanCategoryItem, DriveInfo, ExtensionStat, FileNode, FileN
 use crate::treemap::generate_treemap;
 use crate::windows_drives::list_drives;
 
+pub type CategoryCache = Arc<RwLock<std::collections::HashMap<String, (Vec<u64>, Vec<u32>)>>>;
+
 pub struct AppState {
     pub scan_state: Arc<RwLock<ScanState>>,
     pub cancel_flag: Arc<AtomicBool>,
     pub is_scanning: Arc<AtomicBool>,
-    pub category_tree_cache: Arc<RwLock<std::collections::HashMap<String, (Vec<u64>, Vec<u32>)>>>,
+    pub category_tree_cache: CategoryCache,
 }
 
 impl AppState {
@@ -32,6 +34,12 @@ impl AppState {
             is_scanning: Arc::new(AtomicBool::new(false)),
             category_tree_cache: Arc::new(RwLock::new(std::collections::HashMap::new())),
         }
+    }
+}
+
+impl Default for AppState {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -132,11 +140,9 @@ pub fn compute_filtered_tree_stats(
 
     // 1. Direct match for leaf files
     for i in 0..n {
-        if !nodes[i].is_dir {
-            if matches_category(nodes[i].extension.as_deref(), category_filter) {
-                filtered_sizes[i] = nodes[i].size;
-                filtered_counts[i] = 1;
-            }
+        if !nodes[i].is_dir && matches_category(nodes[i].extension.as_deref(), category_filter) {
+            filtered_sizes[i] = nodes[i].size;
+            filtered_counts[i] = 1;
         }
     }
 
@@ -292,7 +298,7 @@ pub fn get_node_children(
         }
     }
 
-    dtos.sort_unstable_by(|a, b| b.size.cmp(&a.size));
+    dtos.sort_unstable_by_key(|a| std::cmp::Reverse(a.size));
     Ok(dtos)
 }
 
@@ -375,7 +381,7 @@ pub fn get_files_by_filter(
         .collect();
 
     // Sort by size descending (largest files first)
-    matches.sort_unstable_by(|a, b| b.size.cmp(&a.size));
+    matches.sort_unstable_by_key(|a| std::cmp::Reverse(a.size));
 
     let max_count = limit.unwrap_or(2000).min(matches.len());
     let total_scanned_size = guard.total_bytes.max(1) as f64;
@@ -1382,7 +1388,7 @@ pub async fn dev_clean_scan(drive: String) -> Result<crate::models::DevCleanResu
         all_items.extend(root_items);
     }
 
-    all_items.sort_by(|a, b| b.size_bytes.cmp(&a.size_bytes));
+    all_items.sort_by_key(|a| std::cmp::Reverse(a.size_bytes));
 
     let total_size_bytes = all_items.iter().map(|i| i.size_bytes).sum();
     let total_artifacts = all_items.len();
@@ -1621,7 +1627,7 @@ pub async fn duplicate_scan(drive: String) -> Result<crate::models::DuplicateFin
         .collect();
 
     let mut sorted_groups = duplicate_groups;
-    sorted_groups.sort_by(|a, b| b.wasted_bytes.cmp(&a.wasted_bytes));
+    sorted_groups.sort_by_key(|a| std::cmp::Reverse(a.wasted_bytes));
 
     let total_wasted_bytes = sorted_groups.iter().map(|g| g.wasted_bytes).sum();
     let total_duplicate_files = sorted_groups.iter().map(|g| g.files.len() - 1).sum();
@@ -1712,7 +1718,7 @@ pub fn list_category_children(path: String) -> Result<Vec<crate::models::Categor
             });
         }
     }
-    items.sort_by(|a, b| b.size_bytes.cmp(&a.size_bytes));
+    items.sort_by_key(|a| std::cmp::Reverse(a.size_bytes));
     if items.len() > 60 {
         items.truncate(60);
     }

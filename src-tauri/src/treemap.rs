@@ -70,6 +70,7 @@ pub fn generate_treemap(
     rects
 }
 
+#[allow(clippy::too_many_arguments)]
 fn layout_children(
     nodes: &[FileNode],
     children: &[usize],

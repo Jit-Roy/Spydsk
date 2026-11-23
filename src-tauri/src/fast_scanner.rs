@@ -18,6 +18,7 @@ use windows_sys::Win32::Storage::FileSystem::{
 
 use crate::models::{ExtensionStat, FileNode, ScanProgress};
 
+#[derive(Default)]
 pub struct ScanState {
     pub nodes: Vec<FileNode>,
     pub root_id: usize,
@@ -27,21 +28,6 @@ pub struct ScanState {
     pub total_bytes: u64,
     pub elapsed_ms: u64,
     pub root_path: String,
-}
-
-impl Default for ScanState {
-    fn default() -> Self {
-        Self {
-            nodes: Vec::new(),
-            root_id: 0,
-            extension_stats: Vec::new(),
-            total_files: 0,
-            total_dirs: 0,
-            total_bytes: 0,
-            elapsed_ms: 0,
-            root_path: String::new(),
-        }
-    }
 }
 
 pub fn get_category_and_color(ext: &str) -> (&'static str, &'static str) {
@@ -398,20 +384,20 @@ pub fn perform_scan<R: tauri::Runtime>(
                         // Throttle progress events to ~100ms
                         let cur_elapsed = start_time.elapsed().as_millis() as u64;
                         let last = last_prog.load(Ordering::Relaxed);
-                        if cur_elapsed > last + 100 {
-                            if last_prog.compare_exchange(last, cur_elapsed, Ordering::Relaxed, Ordering::Relaxed).is_ok() {
-                                let _ = app_handle_clone.emit(
-                                    "scan-progress",
-                                    ScanProgress {
-                                        files_scanned: files_cnt.load(Ordering::Relaxed),
-                                        dirs_scanned: dirs_cnt.load(Ordering::Relaxed),
-                                        bytes_scanned: bytes_cnt.load(Ordering::Relaxed),
-                                        current_path: task.dir_path,
-                                        elapsed_ms: cur_elapsed,
-                                        is_complete: false,
-                                    },
-                                );
-                            }
+                        if cur_elapsed > last + 100
+                            && last_prog.compare_exchange(last, cur_elapsed, Ordering::Relaxed, Ordering::Relaxed).is_ok()
+                        {
+                            let _ = app_handle_clone.emit(
+                                "scan-progress",
+                                ScanProgress {
+                                    files_scanned: files_cnt.load(Ordering::Relaxed),
+                                    dirs_scanned: dirs_cnt.load(Ordering::Relaxed),
+                                    bytes_scanned: bytes_cnt.load(Ordering::Relaxed),
+                                    current_path: task.dir_path,
+                                    elapsed_ms: cur_elapsed,
+                                    is_complete: false,
+                                },
+                            );
                         }
                     }
 
@@ -478,8 +464,8 @@ pub fn perform_scan<R: tauri::Runtime>(
     let mut nodes: Vec<FileNode> = Vec::with_capacity(total_nodes_count);
 
     // Initialize all directory nodes at indices [0..total_dirs_count)
-    for i in 0..total_dirs_count {
-        if let Some(ref d) = dir_slots[i] {
+    for (i, slot) in dir_slots.iter().enumerate().take(total_dirs_count) {
+        if let Some(ref d) = slot {
             nodes.push(FileNode {
                 id: i,
                 parent_id: d.parent_id,
@@ -616,7 +602,7 @@ pub fn perform_scan<R: tauri::Runtime>(
         })
         .collect();
 
-    extension_stats.sort_by(|a, b| b.total_size.cmp(&a.total_size));
+    extension_stats.sort_by_key(|a| std::cmp::Reverse(a.total_size));
 
     let elapsed_ms = start_time.elapsed().as_millis() as u64;
 

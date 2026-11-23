@@ -10,10 +10,8 @@ import {
   ChevronDown,
   Settings,
 } from 'lucide-react';
-import { DriveInfo, AppMode, CategoryFilterType } from '../types';
+import { DriveInfo, AppMode } from '../types';
 import { formatBytes } from '../utils';
-
-export type { CategoryFilterType };
 
 interface StorageSidebarProps {
   drives: DriveInfo[];

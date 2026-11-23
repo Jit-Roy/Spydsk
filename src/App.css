@@ -76,166 +76,6 @@ body,
   pointer-events: none;
 }
 
-.titlebar-center {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  position: relative;
-}
-
-/* Drive Selector Pill */
-.drive-selector-wrapper {
-  position: relative;
-}
-
-.drive-selector-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 34px;
-  padding: 0 14px;
-  background-color: #161619;
-  border: 1px solid #28282e;
-  border-radius: 9px;
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.drive-selector-btn:hover {
-  background-color: #202025;
-  border-color: #383842;
-}
-
-.drive-icon {
-  color: #a1a1aa;
-}
-
-.chevron-icon {
-  color: #71717a;
-  transition: transform 0.2s ease;
-}
-
-.chevron-icon.rotate {
-  transform: rotate(180deg);
-}
-
-.drive-dropdown-menu {
-  position: absolute;
-  top: 42px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 240px;
-  background-color: #18181c;
-  border: 1px solid #2e2e36;
-  border-radius: 10px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-  padding: 6px;
-  z-index: 1000;
-}
-
-.drive-dropdown-item {
-  padding: 8px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.12s;
-}
-
-.drive-dropdown-item:hover {
-  background-color: #27272e;
-}
-
-.drive-dropdown-item.active {
-  background-color: #27272e;
-  font-weight: 600;
-}
-
-.drive-item-main {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #ffffff;
-  font-size: 13px;
-}
-
-.drive-item-sub {
-  font-size: 11.5px;
-  color: #8e8e99;
-  margin-left: 24px;
-  margin-top: 2px;
-}
-
-/* Search Button & Input */
-.search-wrapper {
-  position: relative;
-}
-
-.search-toggle-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  background-color: #161619;
-  border: 1px solid #28282e;
-  border-radius: 9px;
-  color: #a1a1aa;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.search-toggle-btn:hover {
-  background-color: #202025;
-  color: #ffffff;
-  border-color: #383842;
-}
-
-.search-input-box {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 34px;
-  padding: 0 10px;
-  background-color: #18181c;
-  border: 1px solid #3b3b44;
-  border-radius: 9px;
-  width: 230px;
-}
-
-.search-inner-icon {
-  color: #8e8e99;
-  flex-shrink: 0;
-}
-
-.search-input-field {
-  flex: 1;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: #ffffff;
-  font-size: 12.5px;
-}
-
-.search-input-field::placeholder {
-  color: #63636e;
-}
-
-.search-close-btn {
-  background: transparent;
-  border: none;
-  color: #8e8e99;
-  cursor: pointer;
-  padding: 2px;
-  display: flex;
-  align-items: center;
-}
-
-.search-close-btn:hover {
-  color: #ffffff;
-}
-
 /* Window Control Buttons */
 .titlebar-right {
   display: flex;
@@ -321,15 +161,6 @@ body,
   overflow-y: auto;
 }
 
-/* 1. Circular Donut Progress Bar ALONE at Top */
-.gauge-circle-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  margin-top: 6px;
-}
-
 .donut-wrapper {
   position: relative;
   width: 120px;
@@ -350,11 +181,6 @@ body,
 .donut-track {
   fill: none;
   stroke: #222228;
-}
-
-.donut-track.standby-track {
-  stroke: #1e1e24;
-  stroke-dasharray: 4 4;
 }
 
 .donut-fill {
@@ -386,50 +212,12 @@ body,
   letter-spacing: -0.2px;
 }
 
-.donut-pct.standby-text {
-  font-size: 16px;
-  font-weight: 600;
-  color: #a1a1aa;
-}
-
 .donut-sublabel {
   font-size: 11px;
   font-weight: 500;
   color: #8e8e99;
   margin-top: 3px;
   text-align: center;
-}
-
-/* 2. Used Space & Free Space Description BELOW the Circular Progress Bar */
-.gauge-stats-below {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  margin-top: 14px;
-}
-
-.stats-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  background-color: #121215;
-  border: 1px solid #1c1c22;
-  border-radius: 9px;
-  padding: 10px 14px;
-}
-
-.stats-col {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.stats-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
 }
 
 .legend-dot {
@@ -444,66 +232,6 @@ body,
 
 .free-dot {
   background-color: #52525b;
-}
-
-.stats-label {
-  font-size: 11.5px;
-  color: #8e8e99;
-}
-
-.stats-val {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: #ffffff;
-}
-
-.stats-divider {
-  width: 1px;
-  height: 28px;
-  background-color: #22222a;
-}
-
-.stats-total-line {
-  margin-top: 8px;
-  font-size: 11.5px;
-  color: #71717a;
-  text-align: center;
-}
-
-.stats-standby-block {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  text-align: center;
-  width: 100%;
-  padding: 8px 12px;
-  background-color: #121215;
-  border: 1px solid #1c1c22;
-  border-radius: 9px;
-}
-
-.standby-drive-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #ffffff;
-}
-
-.standby-total-capacity {
-  font-size: 11.5px;
-  color: #8e8e99;
-}
-
-.standby-status-pill {
-  display: inline-flex;
-  align-items: center;
-  margin-top: 3px;
-  padding: 2px 9px;
-  background-color: #18181f;
-  border: 1px solid #282832;
-  border-radius: 999px;
-  color: #71717a;
-  font-size: 10.5px;
 }
 
 /* 1. Left Sidebar Modes List & Items (Matches sample image) */
@@ -589,15 +317,6 @@ body,
 .sidebar-footer {
   margin-top: auto;
   padding-top: 10px;
-}
-
-/* 2. Bottom Section: Circular Donut Gauge shifted to BOTTOM */
-.sidebar-bottom-gauge-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: auto;
-  width: 100%;
 }
 
 
@@ -1254,152 +973,6 @@ body,
   transform: scale(0.98);
 }
 
-.app-logo-splash {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  background-color: #0b0b0d;
-  cursor: default;
-  user-select: none;
-}
-
-.splash-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 16px;
-  animation: fadeIn 0.4s ease-out;
-  cursor: default;
-}
-
-.splash-logo-wrapper {
-  width: 110px;
-  height: 110px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: default;
-}
-
-.app-white-logo {
-  width: 100%;
-  height: 100%;
-}
-
-.splash-title {
-  font-size: 26px;
-  font-weight: 700;
-  letter-spacing: 4px;
-  color: #ffffff;
-  margin-top: 8px;
-}
-
-.splash-subtitle {
-  font-size: 13px;
-  color: #8e8e99;
-  letter-spacing: 0.5px;
-  margin-top: -8px;
-}
-
-.splash-hint-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  margin-top: 20px;
-}
-
-.splash-hint-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  background-color: #16161b;
-  border: 1px solid #282832;
-  border-radius: 999px;
-  color: #a1a1aa;
-  font-size: 13px;
-}
-
-.splash-hint-key {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2px 7px;
-  background-color: #24242e;
-  border: 1px solid #3c3c4a;
-  border-radius: 5px;
-  color: #ffffff;
-  font-weight: 600;
-  font-size: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-}
-
-.splash-engine-tag {
-  font-size: 11.5px;
-  color: #71717a;
-  letter-spacing: 0.3px;
-}
-
-/* ==========================================================================
-   Filter Banner Bar (When filtered by Extension or Category)
-   ========================================================================== */
-.filter-banner-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 20px;
-  background-color: #12141c;
-  border-bottom: 1px solid #1e2436;
-}
-
-.filter-banner-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.filter-banner-tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 10px;
-  background-color: #1e1e24;
-  border: 1px solid #383842;
-  border-radius: 6px;
-  color: #ffffff;
-  font-weight: 600;
-  font-size: 13px;
-  font-family: monospace;
-}
-
-.filter-banner-count {
-  font-size: 13px;
-  color: #a1a1aa;
-}
-
-.filter-clear-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
-  background-color: #1f1f26;
-  border: 1px solid #32323e;
-  border-radius: 6px;
-  color: #e4e4e7;
-  font-size: 12.5px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.filter-clear-btn:hover {
-  background-color: #2c2c38;
-  color: #ffffff;
-}
-
 /* Filtered File Table Details */
 .col-path {
   max-width: 280px;
@@ -1539,44 +1112,8 @@ body,
 }
 
 /* ==========================================================================
-   WizTree File Stacking & Tree Components
+   File Stacking & Tree Components
    ========================================================================== */
-.wiz-box-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 13px;
-  height: 13px;
-  min-width: 13px;
-  min-height: 13px;
-  background-color: #1a1a20;
-  border: 1px solid #4a4a58;
-  border-radius: 2px;
-  color: #d4d4d8;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
-  cursor: pointer;
-  padding: 0;
-  margin-right: 6px;
-  flex-shrink: 0;
-  user-select: none;
-  transition: all 0.1s ease;
-}
-
-.wiz-box-toggle:hover {
-  background-color: #2c2c38;
-  border-color: #71717a;
-  color: #ffffff;
-}
-
-.wiz-box-toggle span {
-  display: block;
-  transform: translateY(-0.5px);
-}
-
-.wiz-folder-icon,
 .folder-icon {
   color: #ffffff !important;
   fill: #ffffff !important;
@@ -1584,7 +1121,6 @@ body,
   flex-shrink: 0;
 }
 
-.tree-file-icon,
 .file-icon {
   color: #8e8e99;
   margin-right: 6px;
@@ -1751,28 +1287,6 @@ body,
   background-color: #0b0b0d;
   height: 100%;
   overflow: hidden;
-}
-
-.tool-view-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 52px;
-  min-height: 52px;
-  padding: 0 24px;
-  border-bottom: 1px solid #1a1a1e;
-}
-
-.tool-header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.tool-header-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: #ffffff;
 }
 
 .tool-view-content {
@@ -2193,20 +1707,6 @@ body,
   overflow: hidden;
 }
 
-.clean-checkbox {
-  width: 15px;
-  height: 15px;
-  accent-color: #ffffff;
-  cursor: pointer;
-  border-radius: 4px;
-  flex-shrink: 0;
-  margin: 0;
-}
-
-.clean-checkbox:disabled {
-  cursor: default;
-}
-
 .clean-item-info {
   display: flex;
   flex-direction: row;
@@ -2515,24 +2015,10 @@ body,
   gap: 2px;
 }
 
-.category-row.drive-active {
-  background-color: #1a1a22;
-  border-color: #2e2e3c;
-  color: #ffffff;
-}
-
-.category-row.drive-active .category-icon-box {
-  color: #ffffff;
-}
-
 .sidebar-footer {
   margin-top: auto;
   padding-top: 12px;
   border-top: 1px solid #1a1a20;
-}
-
-.settings-row {
-  margin-bottom: 0;
 }
 
 /* ==========================================================================
