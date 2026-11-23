@@ -1561,44 +1561,34 @@ export const App: React.FC = () => {
                   </div>
                 )}
 
-                <div className="clean-items-scroll saver-items-scroll">
+                <div className="clean-items-scroll">
                   {spaceSaverResult.items.map((item) => {
                     const isSelected = !!selectedSpaceSaverItems[item.id];
                     return (
                       <div
                         key={item.id}
-                        className={`saver-card ${isSelected ? 'selected' : ''}`}
+                        className={`clean-item-card ${isSelected ? 'selected-row' : ''}`}
                         title={item.path}
                         onClick={() => toggleSpaceSaverItem(item.id)}
                       >
-                        <div className="saver-card-left">
-                          <div className="saver-icon-wrapper">
-                            {item.is_dir ? (
-                              <Folder size={17} className="folder-icon" />
-                            ) : (
-                              <File size={17} className="clean-file-icon" />
-                            )}
-                          </div>
-                          <div className="saver-text-block">
-                            <div className="saver-title-row">
-                              <span className="saver-name">{item.name}</span>
-                              <span className="saver-tag">{item.category}</span>
-                              <span className="saver-badge">-{item.compression_ratio_pct}%</span>
-                            </div>
-                            <div className="saver-path-row">
-                              <span className="saver-path">{item.path}</span>
-                            </div>
+                        <div className="clean-item-left">
+                          {item.is_dir ? (
+                            <Folder size={15} className="folder-icon" />
+                          ) : (
+                            <File size={15} className="clean-file-icon" />
+                          )}
+                          <div className="clean-item-info">
+                            <span className="clean-item-name">{item.name}</span>
+                            <span className="clean-ratio-badge">-{item.compression_ratio_pct}%</span>
+                            <span className="clean-item-path">{item.path}</span>
                           </div>
                         </div>
 
-                        <div className="saver-card-right">
-                          <div className="saver-stats-block">
-                            <span className="saver-compressed-size">~{formatBytes(item.estimated_compressed_bytes)}</span>
-                            <span className="saver-orig-size">from {formatBytes(item.original_size_bytes)}</span>
-                          </div>
-                          <div className="saver-savings-pill">
+                        <div className="clean-item-right">
+                          <span className="clean-item-size">{formatBytes(item.original_size_bytes)}</span>
+                          <span className="clean-item-files">
                             Save ~{formatBytes(item.estimated_savings_bytes)}
-                          </div>
+                          </span>
                         </div>
                       </div>
                     );
