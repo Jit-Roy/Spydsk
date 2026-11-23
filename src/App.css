@@ -1476,7 +1476,7 @@ body,
   display: inline-flex;
   align-items: center;
   padding: 1px 6px;
-  background-color: #1a1a20;
+  background-color: transparent;
   border: 1px solid #282834;
   border-radius: 4px;
   color: #a1a1aa;

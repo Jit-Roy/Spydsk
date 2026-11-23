@@ -194,11 +194,7 @@ export const App: React.FC = () => {
       try {
         const result: SpaceSaverResult = await invoke('space_saver_scan', { drive: selectedPath });
         setSpaceSaverResult(result);
-        const initialSelected: { [id: string]: boolean } = {};
-        result.items.forEach((item) => {
-          initialSelected[item.id] = true;
-        });
-        setSelectedSpaceSaverItems(initialSelected);
+        setSelectedSpaceSaverItems({});
       } catch (err) {
         console.error('Space saver scan error:', err);
       } finally {
