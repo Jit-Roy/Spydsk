@@ -1,89 +1,72 @@
-# DiskLens — Modern High-Performance Disk Space Analyzer
+<div align="center">
 
-A blazing-fast, modern disk space analyzer and cleanup utility built with **Rust (Engine)** and **Tauri v2 + React + TypeScript (UI)**. Designed with a dark monochrome Windows 11 Fluent aesthetic.
+<img src="src/assets/logo.svg" alt="DiskLens Logo" width="130" />
 
----
+# DiskLens
 
-## ✨ Key Features
+### High-Performance Disk Space Analyzer & Storage Cleanup Studio for Windows
 
-- **Ultra-Fast Multi-Threaded Disk Engine**:
-  - Traverses entire drives with low-level Win32 directory APIs.
-  - In-memory arena indexing with zero per-file heap allocation overhead.
-  - Bottom-up post-order size and file count rollups computed in milliseconds.
-- **Interactive Tree & File Explorer**:
-  - Virtualized hierarchical directory tree with percentage-of-parent visual usage bars.
-  - Drill down into folders with Chevron toggles and smooth folder expansion.
-  - Instant live search and category filtering (All, Images, Videos, Archives, Documents, Others).
-  - Context menu shortcuts (Open in File Explorer, Open File, Properties, Copy Path, Delete to Recycle Bin).
-- **Comprehensive Clean Suite**:
-  - **Quick Clean**: Safely scan and clean user/system temporary files, Windows update caches, crash dumps, and browser caches.
-  - **Deep Clean**: Reclaim massive storage from previous Windows installations (`Windows.old`), driver packages, delivery optimization files, and Recycle Bin.
-  - **Developer Cleaner**: Scan and purge heavy `node_modules`, Rust `target/`, and Python `.venv` build artifacts across your projects.
-  - **Duplicates Finder**: Identify duplicate files wasting space by analyzing exact sizes and content hashes.
-  - **Granular Folder Inspection**: Expand any category or project artifact to inspect and select specific subfolders/files for selective deletion.
-- **Modern Dark Fluent Interface**:
-  - Dark monochrome palette (`#0b0b0d`, `#141418`, `#26262e`, `#ffffff`, `#8e8e99`).
-  - Animated live scanning progress, speed counter, and circular drive capacity gauge.
+[![Platform](https://custom-icon-badges.demolab.com/badge/Platform-Windows%2010%20%7C%2011-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/Jit-Roy/DiskLens)
+[![Rust](https://img.shields.io/badge/Rust-2021-DEA584?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
+[![Tauri](https://img.shields.io/badge/Desktop-Tauri%20v2-24C8DB?style=for-the-badge&logo=tauri&logoColor=white)](https://tauri.app/)
+[![React](https://img.shields.io/badge/UI-React%2019-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/Language-TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Bundler-Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![License](https://img.shields.io/badge/License-MIT-222222?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](LICENSE)
+[![GitHub](https://img.shields.io/badge/GitHub-Jit--Roy%2FDiskLens-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Jit-Roy/DiskLens)
+
+</div>
+
+**DiskLens** is a blazing-fast, modern disk space analyzer and cleanup utility for Windows built with a multi-threaded **Rust core engine** and a native **Tauri v2 + React 19** frontend. Designed with a dark monochrome Windows 11 Fluent aesthetic, it traverses millions of files in milliseconds using low-level Win32 directory APIs and zero-allocation memory arenas, rendering an interactive squarified treemap alongside specialized developer and system storage reclaim tools.
 
 ---
 
-## 🚀 Getting Started
+## 📦 Prebuilt Release (Windows x64)
+
+Download the standalone portable executable directly—no installer, no dependencies, 100% offline:
+
+- **Executable**: `dist/DiskLens.exe` (Standalone 4.6 MB executable)
+- **Releases**: [GitHub Releases](https://github.com/Jit-Roy/DiskLens/releases)
+
+---
+
+## 🚀 Running from Source
 
 ### Prerequisites
 - [Node.js](https://nodejs.org/) (v18+)
 - [Rust](https://www.rust-lang.org/) (1.77+)
 - Windows Build Tools (Visual Studio C++ build tools)
 
-### Development
-Launch the app with hot reloading for both frontend and backend:
+### 1. Clone & Install
+```bash
+git clone https://github.com/Jit-Roy/DiskLens.git
+cd DiskLens
+npm install
+```
+
+### 2. Run in Development Mode
+Launches the frontend Vite dev server and compiles the Rust backend with hot reloading:
 ```bash
 npm run tauri dev
 ```
 
-### Production Build
-Build the optimized standalone Windows `.exe` application:
+---
+
+## 🔨 Building the Standalone Executable
+
+To compile the optimized, single-file Windows `.exe` application with embedded offline frontend assets and native `.ico` resources:
+
 ```bash
 npm run build:release
 ```
-The final standalone executable will be output directly to:
+
+The compiled standalone executable will be output directly to:
 ```
 dist/DiskLens.exe
 ```
 
 ---
 
-## 🛠️ Project Structure
-
-```
-├── src/                          # Modern React + Vite Frontend
-│   ├── components/
-│   │   ├── MainContentView.tsx   # File explorer tree/table & search views
-│   │   ├── RightSidebar.tsx      # Drive info circular gauge & view switcher
-│   │   ├── StorageSidebar.tsx    # Drive selector & cleaning tools navigation
-│   │   └── TitleBar.tsx          # Custom dark window header
-│   ├── App.tsx                   # Main layout, cleaning engines, and Tauri IPC
-│   ├── App.css                   # Windows 11 Fluent dark theme styling
-│   ├── types.ts                  # Shared TypeScript data models
-│   ├── utils.ts                  # Formatting helpers
-│   └── main.tsx                  # React entry point
-├── src-tauri/                    # High-Performance Rust Core Engine
-│   ├── src/
-│   │   ├── commands.rs           # Tauri IPC commands & cleaning implementations
-│   │   ├── fast_scanner.rs       # Win32 parallel directory scanner
-│   │   ├── models.rs             # Core data structures & DTOs
-│   │   ├── treemap.rs            # Squarified layout algorithm
-│   │   ├── windows_drives.rs     # Win32 volume & drive detection
-│   │   ├── lib.rs                # Tauri runtime handler registration
-│   │   └── main.rs               # Rust executable entry point
-│   ├── Cargo.toml                # Rust dependencies & optimization profiles
-│   └── tauri.conf.json           # Tauri v2 configuration & window settings
-├── package.json                  # Frontend dependencies & scripts
-├── tsconfig.json                 # TypeScript compiler configuration
-└── vite.config.ts                # Vite bundler configuration
-```
-
----
-
 ## 📄 License
 
-MIT License. Free and open source.
+This project is licensed under the [MIT License](LICENSE). Free and open source.
