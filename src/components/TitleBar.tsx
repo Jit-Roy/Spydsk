@@ -1,6 +1,7 @@
 import React from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { Minus, Square, X } from 'lucide-react';
+import appLogo from '../assets/logo.svg';
 
 export const TitleBar: React.FC = () => {
   const handleMinimize = async (e: React.MouseEvent) => {
@@ -34,7 +35,7 @@ export const TitleBar: React.FC = () => {
     <header className="custom-titlebar" data-tauri-drag-region>
       {/* Left Draggable Area with App Logo & Title */}
       <div className="titlebar-left" data-tauri-drag-region>
-        <img src="/src/assets/logo.svg" alt="AetherTree" className="titlebar-app-icon" data-tauri-drag-region />
+        <img src={appLogo} alt="AetherTree" className="titlebar-app-icon" data-tauri-drag-region />
         <span className="titlebar-app-title" data-tauri-drag-region>AetherTree</span>
       </div>
 

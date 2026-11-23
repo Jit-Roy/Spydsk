@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { execSync } from 'node:child_process';
 
 const src = path.resolve('src-tauri/target/release/aethertree.exe');
 const distDir = path.resolve('dist');
@@ -10,7 +11,19 @@ if (!fs.existsSync(distDir)) {
 }
 
 if (fs.existsSync(src)) {
-  fs.copyFileSync(src, dest);
+  try {
+    fs.copyFileSync(src, dest);
+  } catch (err) {
+    if (err.code === 'EBUSY') {
+      console.log('Terminating active AetherTree instance to overwrite release binary...');
+      try {
+        execSync('taskkill /F /IM AetherTree.exe /T', { stdio: 'ignore' });
+      } catch {}
+      fs.copyFileSync(src, dest);
+    } else {
+      throw err;
+    }
+  }
   const stats = fs.statSync(dest);
   const sizeMb = (stats.size / (1024 * 1024)).toFixed(2);
   console.log(`\x1b[32m✓ Release binary successfully created:\x1b[0m dist/AetherTree.exe (${sizeMb} MB)`);
