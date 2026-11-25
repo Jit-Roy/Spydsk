@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="src/assets/logo.svg" alt="Spydsk Logo" width="160" />
+<img src="src/assets/spydsk_logo_readme.svg" alt="Spydsk Logo" width="160" />
 
 <br />
 
@@ -26,6 +26,7 @@
 
 Download the prebuilt standalone executable directly and run `Spydsk.exe`:
 
+- **Direct Exe Download:** [Spydsk.exe (v1)](https://github.com/Jit-Roy/Spydsk/releases/download/v1/Spydsk.exe)
 - **All Releases:** [GitHub Releases](https://github.com/Jit-Roy/Spydsk/releases)
 
 ## Running from Source
