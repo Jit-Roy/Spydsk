@@ -1,22 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 64" width="210" height="64" role="img" aria-label="Spydsk">
   <title>Spydsk</title>
   <defs>
-    <linearGradient id="spyRainbow" gradientUnits="userSpaceOnUse" x1="30" y1="0" x2="180" y2="0">
-      <stop offset="0%" stop-color="#22D3EE"/>
-      <stop offset="22%" stop-color="#3B82F6"/>
-      <stop offset="46%" stop-color="#8B5CF6"/>
-      <stop offset="68%" stop-color="#EC4899"/>
-      <stop offset="84%" stop-color="#F97316"/>
-      <stop offset="100%" stop-color="#F59E0B"/>
-    </linearGradient>
     <linearGradient id="pillBg" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#141416"/>
       <stop offset="100%" stop-color="#070709"/>
     </linearGradient>
     <linearGradient id="pillStroke" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#22D3EE" stop-opacity="0.8"/>
-      <stop offset="50%" stop-color="#8B5CF6" stop-opacity="0.45"/>
-      <stop offset="100%" stop-color="#F59E0B" stop-opacity="0.65"/>
+      <stop offset="0%" stop-color="#22D3EE" stop-opacity="0.85"/>
+      <stop offset="50%" stop-color="#8B5CF6" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#10B981" stop-opacity="0.75"/>
     </linearGradient>
   </defs>
 
@@ -27,6 +19,5 @@
         font-family="Segoe UI, Liberation Sans, Arial, Helvetica, sans-serif"
         font-size="40"
         font-weight="800"
-        letter-spacing="1"
-        fill="url(#spyRainbow)">Spydsk</text>
+        letter-spacing="1"><tspan fill="#22D3EE">S</tspan><tspan fill="#3B82F6">p</tspan><tspan fill="#8B5CF6">y</tspan><tspan fill="#F59E0B">d</tspan><tspan fill="#EC4899">s</tspan><tspan fill="#10B981">k</tspan></text>
 </svg>

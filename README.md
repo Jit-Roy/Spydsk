@@ -4,7 +4,7 @@
 
 <br />
 
-<img src="src/assets/spydsk_title.svg" alt="Spydsk" width="210" />
+<img src="src/assets/spydsk_wordmark.svg" alt="Spydsk" width="210" />
 
 [![Platform](https://custom-icon-badges.demolab.com/badge/Platform-Windows%2010%20%7C%2011-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/Jit-Roy/Spydsk)
 [![Rust](https://img.shields.io/badge/Rust-2021-DEA584?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
