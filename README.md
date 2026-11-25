@@ -1,72 +1,54 @@
 <div align="center">
 
-<img src="src/assets/logo.svg" alt="DiskLens Logo" width="130" />
+<img src="src/assets/logo.svg" alt="Spydsk Logo" width="160" />
 
-# DiskLens
+<br />
 
-### High-Performance Disk Space Analyzer & Storage Cleanup Studio for Windows
+<img src="src/assets/spydsk_title.svg" alt="Spydsk" width="210" />
 
-[![Platform](https://custom-icon-badges.demolab.com/badge/Platform-Windows%2010%20%7C%2011-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/Jit-Roy/DiskLens)
+[![Platform](https://custom-icon-badges.demolab.com/badge/Platform-Windows%2010%20%7C%2011-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/Jit-Roy/Spydsk)
 [![Rust](https://img.shields.io/badge/Rust-2021-DEA584?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![Tauri](https://img.shields.io/badge/Desktop-Tauri%20v2-24C8DB?style=for-the-badge&logo=tauri&logoColor=white)](https://tauri.app/)
 [![React](https://img.shields.io/badge/UI-React%2019-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/Language-TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Bundler-Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![WebView2](https://img.shields.io/badge/Renderer-WebView2-0078D7?style=for-the-badge&logo=googlechrome&logoColor=white)](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)
 [![License](https://img.shields.io/badge/License-MIT-222222?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](LICENSE)
-[![GitHub](https://img.shields.io/badge/GitHub-Jit--Roy%2FDiskLens-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Jit-Roy/DiskLens)
+[![GitHub](https://img.shields.io/badge/GitHub-Jit--Roy%2FSpydsk-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Jit-Roy/Spydsk)
 
 </div>
 
-**DiskLens** is a blazing-fast, modern disk space analyzer and cleanup utility for Windows built with a multi-threaded **Rust core engine** and a native **Tauri v2 + React 19** frontend. Designed with a dark monochrome Windows 11 Fluent aesthetic, it traverses millions of files in milliseconds using low-level Win32 directory APIs and zero-allocation memory arenas, rendering an interactive squarified treemap alongside specialized developer and system storage reclaim tools.
+**Spydsk** is a Windows disk space analyzer and storage cleanup studio built with a multi-threaded Rust scanning engine and a dark monochrome Tauri v2 + React interface. It traverses drives quickly using native Win32 file enumeration APIs and provides interactive Tree and Flat File explorers, category and instant minimum-size cache filtering, Quick Clean, Dev Cleaner, Duplicate Finder, Deep Clean, and Space Saver (ZIP archival and native NTFS LZX compaction), along with Protected Paths safeguards and configurable decimal or binary IEC size units.
 
 ---
 
-## 📦 Prebuilt Release (Windows x64)
+## Prebuilt Release (Windows x64)
 
-Download the standalone portable executable directly—no installer, no dependencies, 100% offline:
+Download the prebuilt standalone executable directly and run `Spydsk.exe`:
 
-- **Executable**: `dist/DiskLens.exe` (Standalone 4.6 MB executable)
-- **Releases**: [GitHub Releases](https://github.com/Jit-Roy/DiskLens/releases)
+- **All Releases:** [GitHub Releases](https://github.com/Jit-Roy/Spydsk/releases)
 
----
+## Running from Source
 
-## 🚀 Running from Source
-
-### Prerequisites
-- [Node.js](https://nodejs.org/) (v18+)
-- [Rust](https://www.rust-lang.org/) (1.77+)
-- Windows Build Tools (Visual Studio C++ build tools)
-
-### 1. Clone & Install
 ```bash
-git clone https://github.com/Jit-Roy/DiskLens.git
-cd DiskLens
+git clone https://github.com/Jit-Roy/Spydsk.git
+cd Spydsk
 npm install
-```
-
-### 2. Run in Development Mode
-Launches the frontend Vite dev server and compiles the Rust backend with hot reloading:
-```bash
 npm run tauri dev
 ```
 
----
+## Building the Executable
 
-## 🔨 Building the Standalone Executable
-
-To compile the optimized, single-file Windows `.exe` application with embedded offline frontend assets and native `.ico` resources:
+With Node.js (v18+) and Rust (1.77+) installed, bundle the standalone Windows build using Tauri:
 
 ```bash
 npm run build:release
 ```
 
-The compiled standalone executable will be output directly to:
-```
-dist/DiskLens.exe
-```
+The built application will be output to `dist\Spydsk.exe`.
 
----
+## Settings & Cache Location
 
-## 📄 License
+Spydsk stores persistent preferences in local WebView2 storage under Windows Local AppData (`%LOCALAPPDATA%\com.spydsk.desktop\EBWebView`, i.e., `C:\Users\<Username>\AppData\Local\com.spydsk.desktop\EBWebView`):
 
-This project is licensed under the [MIT License](LICENSE). Free and open source.
+- `spydsk_settings` (`localStorage`) — Hidden and system file visibility, junction/symlink skipping, Adaptive/IEC display units, minimum file size filter, and Protected Paths ignore list

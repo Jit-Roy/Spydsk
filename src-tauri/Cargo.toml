@@ -1,13 +1,13 @@
 [package]
-name = "disklens"
+name = "spydsk"
 version = "0.1.0"
-description = "DiskLens - Modern High-Performance Disk Space Analyzer"
+description = "Spydsk - Modern High-Performance Disk Space Analyzer"
 authors = ["you"]
 edition = "2021"
-default-run = "disklens"
+default-run = "spydsk"
 
 [[bin]]
-name = "disklens"
+name = "spydsk"
 path = "src/main.rs"
 
 [lib]

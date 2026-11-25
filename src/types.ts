@@ -1,5 +1,29 @@
-export type AppMode = 'explorer' | 'quick_clean' | 'dev_clean' | 'duplicates' | 'deep_clean' | 'space_saver';
+export type AppMode = 'explorer' | 'quick_clean' | 'dev_clean' | 'duplicates' | 'deep_clean' | 'space_saver' | 'settings';
 export type CategoryFilterType = 'All' | 'Images' | 'Videos' | 'Zip' | 'Documents' | 'Others';
+
+export interface AppSettings {
+  showHiddenSystemFiles: boolean;
+  skipJunctions: boolean;
+  scanUnitFormat: 'adaptive' | 'iec';
+  protectedPaths: string[];
+  minFileSizeValue: number;
+  minFileSizeUnit: 'KB' | 'MB' | 'GB';
+  minFileSizeKb: number;
+}
+
+export const DEFAULT_SETTINGS: AppSettings = {
+  showHiddenSystemFiles: false,
+  skipJunctions: true,
+  scanUnitFormat: 'adaptive',
+  protectedPaths: [
+    'C:\\Windows',
+    'C:\\Program Files',
+    'C:\\Program Files (x86)',
+  ],
+  minFileSizeValue: 0,
+  minFileSizeUnit: 'KB',
+  minFileSizeKb: 0,
+};
 
 export interface DriveInfo {
   mount_point: string;

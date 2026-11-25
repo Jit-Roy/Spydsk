@@ -20,8 +20,11 @@ import {
   ChevronDown,
   Search,
   X,
+  GitFork,
+  Menu,
+  Loader2,
 } from 'lucide-react';
-import { FileNodeDto, ScanProgress, CategoryFilterType } from '../types';
+import { FileNodeDto, ScanProgress, CategoryFilterType, AppSettings } from '../types';
 import { formatBytes, formatDate } from '../utils';
 
 interface MainContentViewProps {
@@ -33,6 +36,9 @@ interface MainContentViewProps {
   selectedCategory: CategoryFilterType;
   onSelectCategory: (cat: CategoryFilterType) => void;
   activeView: 'tree' | 'file';
+  onSelectView: (view: 'tree' | 'file') => void;
+  settings?: AppSettings;
+  onUpdateSettings?: (newSettings: Partial<AppSettings>) => void;
 }
 
 interface ExpandedState {
@@ -62,6 +68,9 @@ export const MainContentView: React.FC<MainContentViewProps> = ({
   selectedCategory,
   onSelectCategory,
   activeView,
+  onSelectView,
+  settings,
+  onUpdateSettings,
 }) => {
   const [rootNodes, setRootNodes] = useState<FileNodeDto[]>([]);
   const [expanded, setExpanded] = useState<{ [id: number]: boolean }>({});
@@ -138,7 +147,7 @@ export const MainContentView: React.FC<MainContentViewProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedNode, clipboardAction, selectedPath]);
 
-  // Load root children for Tree View (re-loads when rootId or selectedCategory changes)
+  // Load root children for Tree View (re-loads when rootId, selectedCategory, or settings.minFileSizeKb changes)
   useEffect(() => {
     if (rootId !== null) {
       setExpanded({});
@@ -154,7 +163,7 @@ export const MainContentView: React.FC<MainContentViewProps> = ({
       setSelectedPathState(null);
       setSelectedNode(null);
     }
-  }, [rootId, selectedCategory]);
+  }, [rootId, selectedCategory, settings?.minFileSizeKb]);
 
   // Flat files mode is ONLY active when user explicitly chooses File View
   const isFlatFilesMode = activeView === 'file';
@@ -169,9 +178,11 @@ export const MainContentView: React.FC<MainContentViewProps> = ({
       try {
         const catParam =
           selectedCategory !== 'All' ? selectedCategory.toLowerCase() : undefined;
+        const minSizeBytes = (settings?.minFileSizeKb || 0) * 1024;
 
         const results: FileNodeDto[] = await invoke('get_files_by_filter', {
           category: catParam,
+          minSizeBytes: minSizeBytes,
           limit: 2000,
         });
         setFlatFiles(results);
@@ -183,16 +194,18 @@ export const MainContentView: React.FC<MainContentViewProps> = ({
     };
 
     fetchFiles();
-  }, [selectedCategory, activeView, rootId, isFlatFilesMode]);
+  }, [selectedCategory, activeView, rootId, isFlatFilesMode, settings?.minFileSizeKb]);
 
   const loadChildren = async (nodeId: number, isRoot = false) => {
     try {
       const catParam =
         selectedCategory !== 'All' ? selectedCategory.toLowerCase() : undefined;
+      const minSizeBytes = (settings?.minFileSizeKb || 0) * 1024;
 
       const nodes: FileNodeDto[] = await invoke('get_node_children', {
         parentId: nodeId,
         category: catParam,
+        minSizeBytes: minSizeBytes,
       });
       if (isRoot) {
         setRootNodes(nodes);
@@ -370,12 +383,13 @@ export const MainContentView: React.FC<MainContentViewProps> = ({
     parentPath = selectedPath,
     parentSize = 1
   ): React.ReactNode => {
-    const subdirs = sortNodes(nodes.filter((n) => n.is_dir));
-    const directFiles = sortNodes(nodes.filter((n) => !n.is_dir));
+    const visibleNodes = filterVisibleNodes(nodes);
+    const subdirs = sortNodes(visibleNodes.filter((n) => n.is_dir));
+    const directFiles = sortNodes(visibleNodes.filter((n) => !n.is_dir));
 
     const totalFilesSize = directFiles.reduce((acc, f) => acc + f.size, 0);
     const filesPercentage = parentSize > 0 ? (totalFilesSize / parentSize) * 100 : 0;
-    const parentId = nodes.length > 0 && nodes[0].parent_id !== null ? nodes[0].parent_id : 0;
+    const parentId = visibleNodes.length > 0 && visibleNodes[0].parent_id !== null ? visibleNodes[0].parent_id : 0;
     const isStackExp = !!expandedFileStacks[parentId];
 
     return (
@@ -384,10 +398,8 @@ export const MainContentView: React.FC<MainContentViewProps> = ({
         {directFiles.length > 0 && (
           <>
             <tr
-              className={`data-row file-stack-row ${
-                selectedPathState === `stack_${parentId}` ? 'selected-row' : ''
-              }`}
-              style={{ paddingLeft: `${depth * 20 + 8}px` }}
+              className={`data-row file-stack-row ${selectedPathState === `stack_${parentId}` ? 'selected-row' : ''
+                }`}
               onClick={() => {
                 setSelectedPathState(`stack_${parentId}`);
               }}
@@ -403,13 +415,16 @@ export const MainContentView: React.FC<MainContentViewProps> = ({
                     {isStackExp ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                   </button>
 
-                  <span className="file-stack-name">
+                  <span
+                    className="file-stack-name"
+                    title={`[${directFiles.length} Files in ${parentPath}]`}
+                  >
                     [{directFiles.length} Files in {parentPath}]
                   </span>
                 </div>
               </td>
 
-              <td className="col-size">{formatBytes(totalFilesSize)}</td>
+              <td className="col-size">{formatBytes(totalFilesSize, settings?.scanUnitFormat)}</td>
 
               <td className="col-pct">
                 <div className="pct-cell">
@@ -430,7 +445,7 @@ export const MainContentView: React.FC<MainContentViewProps> = ({
 
             {/* Individual Files inside the File Stack when expanded */}
             {isStackExp &&
-              directFiles.map((file) => {
+              filterVisibleNodes(directFiles).map((file) => {
                 const isSelected = selectedPathState === file.path;
 
                 return (
@@ -454,7 +469,7 @@ export const MainContentView: React.FC<MainContentViewProps> = ({
                       </div>
                     </td>
 
-                    <td className="col-size">{formatBytes(file.size)}</td>
+                    <td className="col-size">{formatBytes(file.size, settings?.scanUnitFormat)}</td>
 
                     <td className="col-pct">
                       <div className="pct-cell">
@@ -513,7 +528,7 @@ export const MainContentView: React.FC<MainContentViewProps> = ({
                   </div>
                 </td>
 
-                <td className="col-size">{formatBytes(dir.size)}</td>
+                <td className="col-size">{formatBytes(dir.size, settings?.scanUnitFormat)}</td>
 
                 <td className="col-pct">
                   <div className="pct-cell">
@@ -539,7 +554,7 @@ export const MainContentView: React.FC<MainContentViewProps> = ({
               {/* Recursive Child Rows when folder expanded */}
               {isExp &&
                 children.length > 0 &&
-                renderTreeRows(children, depth + 1, dir.path, dir.size)}
+                renderTreeRows(filterVisibleNodes(children), depth + 1, dir.path, dir.size)}
             </React.Fragment>
           );
         })}
@@ -553,31 +568,80 @@ export const MainContentView: React.FC<MainContentViewProps> = ({
     label: string;
     icon: React.ReactNode;
   }[] = [
-    { key: 'All', label: 'All', icon: <FolderOpen size={14} /> },
-    { key: 'Images', label: 'Images', icon: <ImageIcon size={14} /> },
-    { key: 'Videos', label: 'Videos', icon: <Play size={14} fill="currentColor" /> },
-    { key: 'Zip', label: 'Zip', icon: <Package size={14} /> },
-    { key: 'Documents', label: 'Documents', icon: <FileText size={14} /> },
-    { key: 'Others', label: 'Others', icon: <MoreHorizontal size={14} /> },
-  ];
+      { key: 'All', label: 'All', icon: <FolderOpen size={14} /> },
+      { key: 'Images', label: 'Images', icon: <ImageIcon size={14} /> },
+      { key: 'Videos', label: 'Videos', icon: <Play size={14} fill="currentColor" /> },
+      { key: 'Zip', label: 'Zip', icon: <Package size={14} /> },
+      { key: 'Documents', label: 'Documents', icon: <FileText size={14} /> },
+      { key: 'Others', label: 'Others', icon: <MoreHorizontal size={14} /> },
+    ];
 
   const currentCategoryOpt =
     categoryOptions.find((opt) => opt.key === selectedCategory) || categoryOptions[0];
 
+  const isHiddenOrSystem = (name: string): boolean => {
+    if (name.startsWith('$') || name.startsWith('.')) return true;
+    const l = name.toLowerCase();
+    return (
+      l === 'system volume information' ||
+      l === '$recycle.bin' ||
+      l === 'hiberfil.sys' ||
+      l === 'pagefile.sys' ||
+      l === 'swapfile.sys' ||
+      l === 'dumpstack.log' ||
+      l === 'recovery' ||
+      l === 'msocache' ||
+      l === 'config.msi'
+    );
+  };
+
+  const isPathIgnored = (itemPath: string, itemName?: string): boolean => {
+    if (!settings?.protectedPaths || settings.protectedPaths.length === 0) return false;
+    const norm = (itemPath || '').toLowerCase().replace(/\\+$/, '').replace(/\//g, '\\');
+    const normName = (itemName || '').toLowerCase().trim();
+    return settings.protectedPaths.some((p) => {
+      const pNorm = p.trim().toLowerCase().replace(/\\+$/, '').replace(/\//g, '\\');
+      if (!pNorm) return false;
+      if (norm === pNorm || norm.startsWith(pNorm + '\\')) return true;
+      if (normName === pNorm) return true;
+      const parts = norm.split('\\');
+      if (parts.includes(pNorm)) return true;
+      const pLeaf = pNorm.substring(pNorm.lastIndexOf('\\') + 1);
+      if (normName && normName === pLeaf) return true;
+      return false;
+    });
+  };
+
+  const filterHidden = (nodes: FileNodeDto[]): FileNodeDto[] => {
+    if (settings?.showHiddenSystemFiles) return nodes;
+    return nodes.filter((n) => !isHiddenOrSystem(n.name));
+  };
+
+  const filterIgnored = (nodes: FileNodeDto[]): FileNodeDto[] => {
+    if (!settings?.protectedPaths || settings.protectedPaths.length === 0) return nodes;
+    return nodes.filter((n) => !isPathIgnored(n.path, n.name));
+  };
+
+  const filterVisibleNodes = (nodes: FileNodeDto[]): FileNodeDto[] => {
+    return filterIgnored(filterHidden(nodes));
+  };
+
   const maxFilteredSize = flatFiles.length > 0 ? flatFiles[0].size : 1;
-  const sortedFlatFiles = sortNodes(flatFiles);
+  const filteredFlatFiles = filterVisibleNodes(flatFiles);
+  const sortedFlatFiles = sortNodes(filteredFlatFiles);
 
   const displayedFlatFiles = searchFilter.trim()
     ? sortedFlatFiles.filter((f) =>
-        f.name.toLowerCase().includes(searchFilter.trim().toLowerCase())
-      )
+      f.name.toLowerCase().includes(searchFilter.trim().toLowerCase())
+    )
     : sortedFlatFiles;
 
+  const filteredRootNodes = filterVisibleNodes(rootNodes);
   const displayedTreeNodes = searchFilter.trim()
-    ? rootNodes.filter((n) =>
-        n.name.toLowerCase().includes(searchFilter.trim().toLowerCase())
-      )
-    : rootNodes;
+    ? filteredRootNodes.filter((n) =>
+      n.name.toLowerCase().includes(searchFilter.trim().toLowerCase())
+    )
+    : filteredRootNodes;
 
   return (
     <div
@@ -611,9 +675,8 @@ export const MainContentView: React.FC<MainContentViewProps> = ({
                 {categoryOptions.map((opt) => (
                   <div
                     key={opt.key}
-                    className={`filter-dropdown-item ${
-                      selectedCategory === opt.key ? 'active' : ''
-                    }`}
+                    className={`filter-dropdown-item ${selectedCategory === opt.key ? 'active' : ''
+                      }`}
                     onClick={() => {
                       onSelectCategory(opt.key);
                       setDropdownOpen(false);
@@ -653,6 +716,47 @@ export const MainContentView: React.FC<MainContentViewProps> = ({
               )}
             </div>
           )}
+
+          {/* Active Min Size Filter Pill */}
+          {(settings?.minFileSizeKb ?? 0) > 0 && (
+            <div className="toolbar-active-filter-badge" title="Minimum File Size Filter is active. Click '×' to clear.">
+              <span>Filter: ≥ {settings?.minFileSizeValue} {settings?.minFileSizeUnit || 'KB'}</span>
+              {onUpdateSettings && (
+                <button
+                  type="button"
+                  className="toolbar-filter-clear-btn"
+                  onClick={() => onUpdateSettings({ minFileSizeValue: 0, minFileSizeKb: 0 })}
+                  title="Clear size filter"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Right Side of Canvas Toolbar: Tree View / File View Switcher */}
+        <div className="toolbar-view-toggle">
+          <div className="view-toggle-pill">
+            <button
+              type="button"
+              className={`view-pill-btn ${activeView === 'tree' ? 'active' : ''}`}
+              onClick={() => onSelectView('tree')}
+              title="Tree View"
+            >
+              <GitFork size={13} className="view-icon" />
+              <span>Tree View</span>
+            </button>
+            <button
+              type="button"
+              className={`view-pill-btn ${activeView === 'file' ? 'active' : ''}`}
+              onClick={() => onSelectView('file')}
+              title="File View"
+            >
+              <Menu size={13} className="view-icon" />
+              <span>File View</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -728,8 +832,8 @@ export const MainContentView: React.FC<MainContentViewProps> = ({
         </div>
       ) : isScanning ? (
         <div className="scanning-splash">
-          <div className="scanning-pulse-circle">
-            <span className="scanning-pulse-glyph">⬡</span>
+          <div className="tool-hero-icon">
+            <Loader2 size={30} className="spin-icon" />
           </div>
           <h2 className="scanning-title">
             Scanning Drive {selectedPath.replace('\\', '')}...
@@ -737,9 +841,9 @@ export const MainContentView: React.FC<MainContentViewProps> = ({
           <p className="scanning-details">
             {progress
               ? `${progress.files_scanned.toLocaleString()} files • ${(
-                  progress.bytes_scanned /
-                  (1024 ** 3)
-                ).toFixed(1)} GB scanned`
+                progress.bytes_scanned /
+                (1024 ** 3)
+              ).toFixed(1)} GB scanned`
               : 'Streaming Master File Table across 16 threads...'}
           </p>
           {progress?.current_path && (
@@ -786,7 +890,10 @@ export const MainContentView: React.FC<MainContentViewProps> = ({
               {loadingFiles ? (
                 <tr>
                   <td colSpan={6} className="empty-table-msg">
-                    Loading files across entire drive...
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                      <Loader2 size={14} className="spin-icon" />
+                      <span>Loading files across entire drive...</span>
+                    </span>
                   </td>
                 </tr>
               ) : displayedFlatFiles.length > 0 ? (
@@ -799,9 +906,8 @@ export const MainContentView: React.FC<MainContentViewProps> = ({
                   return (
                     <tr
                       key={file.id}
-                      className={`data-row filtered-file-row ${
-                        isSelected ? 'selected-row' : ''
-                      }`}
+                      className={`data-row filtered-file-row ${isSelected ? 'selected-row' : ''
+                        }`}
                       onClick={(e) => handleRowClick(file, e)}
                       onContextMenu={(e) => handleRowContextMenu(e, file)}
                       onDoubleClick={() => handleOpen(file.path)}
@@ -819,7 +925,7 @@ export const MainContentView: React.FC<MainContentViewProps> = ({
                         <span className="dimmed-path">{folderPath}</span>
                       </td>
 
-                      <td className="col-size">{formatBytes(file.size)}</td>
+                      <td className="col-size">{formatBytes(file.size, settings?.scanUnitFormat)}</td>
 
                       <td className="col-pct">
                         <div className="pct-cell">
@@ -909,7 +1015,9 @@ export const MainContentView: React.FC<MainContentViewProps> = ({
               ) : (
                 <tr>
                   <td colSpan={6} className="empty-table-msg">
-                    No items found on {selectedPath}
+                    {settings?.minFileSizeKb && settings.minFileSizeKb > 0
+                      ? `No items found with size ≥ ${settings.minFileSizeValue} ${settings.minFileSizeUnit || 'KB'} on ${selectedPath}. Try lowering the Minimum File Size Filter in Settings.`
+                      : `No items found on ${selectedPath}`}
                   </td>
                 </tr>
               )}

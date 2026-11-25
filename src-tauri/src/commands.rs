@@ -53,6 +53,7 @@ pub async fn start_scan(
     app: AppHandle,
     state: State<'_, AppState>,
     path: String,
+    options: Option<crate::fast_scanner::ScanOptions>,
 ) -> Result<ScanSummary, String> {
     if state.is_scanning.swap(true, Ordering::SeqCst) {
         return Err("A scan is already in progress".to_string());
@@ -64,7 +65,7 @@ pub async fn start_scan(
     let scan_state_lock = Arc::clone(&state.scan_state);
 
     let res = tauri::async_runtime::spawn_blocking(move || {
-        let outcome = perform_scan(&app, path, cancel_flag);
+        let outcome = perform_scan(&app, path, cancel_flag, options);
         is_scanning.store(false, Ordering::SeqCst);
 
         match outcome {
@@ -133,16 +134,19 @@ fn matches_category(extension: Option<&str>, cat_filter: &str) -> bool {
 pub fn compute_filtered_tree_stats(
     nodes: &[FileNode],
     category_filter: &str,
+    min_size_bytes: u64,
 ) -> (Vec<u64>, Vec<u32>) {
     let n = nodes.len();
     let mut filtered_sizes = vec![0u64; n];
     let mut filtered_counts = vec![0u32; n];
 
-    // 1. Direct match for leaf files
+    // 1. Direct match for leaf files (must be >= min_size_bytes AND match category)
     for i in 0..n {
-        if !nodes[i].is_dir && matches_category(nodes[i].extension.as_deref(), category_filter) {
-            filtered_sizes[i] = nodes[i].size;
-            filtered_counts[i] = 1;
+        if !nodes[i].is_dir {
+            if nodes[i].size >= min_size_bytes && matches_category(nodes[i].extension.as_deref(), category_filter) {
+                filtered_sizes[i] = nodes[i].size;
+                filtered_counts[i] = 1;
+            }
         }
     }
 
@@ -186,6 +190,7 @@ pub fn get_node_children(
     state: State<'_, AppState>,
     parent_id: Option<usize>,
     category: Option<String>,
+    min_size_bytes: Option<u64>,
 ) -> Result<Vec<FileNodeDto>, String> {
     let guard = state.scan_state.read().map_err(|e| e.to_string())?;
     if guard.nodes.is_empty() {
@@ -198,12 +203,10 @@ pub fn get_node_children(
     }
 
     let parent_node = &guard.nodes[target_id];
-
-    // Check if filtering by category
-    let is_filtered = category
-        .as_ref()
-        .map(|c| !c.eq_ignore_ascii_case("all") && !c.is_empty())
-        .unwrap_or(false);
+    let min_size = min_size_bytes.unwrap_or(0);
+    let cat_param = category.as_deref().unwrap_or("all");
+    let is_cat_filtered = !cat_param.eq_ignore_ascii_case("all") && !cat_param.is_empty();
+    let is_filtered = is_cat_filtered || min_size > 0;
 
     if !is_filtered {
         let parent_size = parent_node.size.max(1);
@@ -231,8 +234,8 @@ pub fn get_node_children(
         return Ok(dtos);
     }
 
-    // Filtered tree by category
-    let cat_key = category.as_ref().unwrap().to_lowercase();
+    // Filtered tree by category or file size
+    let cat_key = format!("{}:{}", cat_param.to_lowercase(), min_size);
 
     let (filtered_sizes, filtered_counts) = {
         let read_cache = state.category_tree_cache.read().map_err(|e| e.to_string())?;
@@ -240,7 +243,7 @@ pub fn get_node_children(
             cached.clone()
         } else {
             drop(read_cache);
-            let computed = compute_filtered_tree_stats(&guard.nodes, &cat_key);
+            let computed = compute_filtered_tree_stats(&guard.nodes, cat_param, min_size);
             if let Ok(mut write_cache) = state.category_tree_cache.write() {
                 write_cache.insert(cat_key, computed.clone());
             }
@@ -276,8 +279,8 @@ pub fn get_node_children(
                     });
                 }
             } else {
-                // Direct file: only include if it matches the category
-                if filtered_counts[child_id] > 0 {
+                // Direct file: only include if size >= min_size and matches category
+                if child.size >= min_size && filtered_counts[child_id] > 0 {
                     let percentage = (child.size as f64 / parent_size as f64) * 100.0;
                     dtos.push(FileNodeDto {
                         id: child.id,
@@ -331,6 +334,7 @@ pub fn get_files_by_filter(
     state: State<'_, AppState>,
     extension: Option<String>,
     category: Option<String>,
+    min_size_bytes: Option<u64>,
     limit: Option<usize>,
 ) -> Result<Vec<FileNodeDto>, String> {
     let guard = state.scan_state.read().map_err(|e| e.to_string())?;
@@ -346,12 +350,16 @@ pub fn get_files_by_filter(
         .as_deref()
         .map(|c| c.to_lowercase())
         .filter(|c| c != "all");
+    let min_size = min_size_bytes.unwrap_or(0);
 
     let mut matches: Vec<&FileNode> = guard
         .nodes
         .iter()
         .filter(|node| {
             if node.is_dir {
+                return false;
+            }
+            if min_size > 0 && node.size < min_size {
                 return false;
             }
             if let Some(ref ext) = ext_target {
@@ -2035,4 +2043,41 @@ pub async fn space_saver_compress(
         freed_bytes,
         message,
     })
+}
+
+#[tauri::command]
+pub fn pick_folder() -> Result<Option<String>, String> {
+    #[cfg(windows)]
+    {
+        use std::process::Command;
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+        let script = r#"
+            Add-Type -AssemblyName System.Windows.Forms
+            $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
+            $dialog.Description = "Select a folder to protect in Spydsk"
+            $dialog.ShowNewFolderButton = $false
+            if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+                Write-Output $dialog.SelectedPath
+            }
+        "#;
+
+        let output = Command::new("powershell")
+            .args(["-Sta", "-NoProfile", "-WindowStyle", "Hidden", "-Command", script])
+            .creation_flags(CREATE_NO_WINDOW)
+            .output()
+            .map_err(|e| e.to_string())?;
+
+        let res = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if res.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(res))
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        Ok(None)
+    }
 }

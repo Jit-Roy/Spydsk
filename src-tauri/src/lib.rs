@@ -39,7 +39,8 @@ pub fn run() {
             purge_specific_paths,
             space_saver_scan,
             space_saver_compress,
+            pick_folder,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running DiskLens application");
+        .expect("error while running Spydsk application");
 }

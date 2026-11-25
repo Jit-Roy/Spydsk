@@ -119,7 +119,11 @@ export const StorageSidebar: React.FC<StorageSidebarProps> = ({
 
       {/* 3. Settings at the bottom */}
       <div className="sidebar-footer">
-        <div className="sidebar-item-row" title="Settings">
+        <div
+          className={`sidebar-item-row ${activeMode === 'settings' ? 'active' : ''}`}
+          title="Settings"
+          onClick={() => onSelectMode('settings')}
+        >
           <span className="sidebar-item-icon">
             <Settings size={16} />
           </span>

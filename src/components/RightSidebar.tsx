@@ -1,5 +1,5 @@
 import React from 'react';
-import { HardDrive, GitFork, Menu } from 'lucide-react';
+import { HardDrive } from 'lucide-react';
 import { DriveInfo } from '../types';
 import { formatBytes } from '../utils';
 
@@ -7,30 +7,24 @@ interface RightSidebarProps {
   currentDrive?: DriveInfo;
   totalBytesScanned: number;
   isScanned: boolean;
-  activeView: 'tree' | 'file';
-  onSelectView: (view: 'tree' | 'file') => void;
-  showViewToggle?: boolean;
+  scanUnitFormat?: 'adaptive' | 'iec';
 }
 
 export const RightSidebar: React.FC<RightSidebarProps> = ({
   currentDrive,
   totalBytesScanned,
   isScanned,
-  activeView,
-  onSelectView,
-  showViewToggle = true,
+  scanUnitFormat,
 }) => {
   const totalBytes = currentDrive?.total_bytes || 181.7 * 1024 ** 3;
-  const usedBytes = isScanned
-    ? totalBytesScanned || currentDrive?.used_bytes || 0
-    : currentDrive?.used_bytes || 0;
-  const freeBytes = isScanned
-    ? Math.max(0, totalBytes - usedBytes)
-    : currentDrive?.free_bytes || totalBytes;
+  const usedBytes = currentDrive?.used_bytes || 0;
+  const freeBytes = currentDrive?.free_bytes || Math.max(0, totalBytes - usedBytes);
 
-  const percentUsed = totalBytes > 0
-    ? Math.min(100, Math.max(0, (usedBytes / totalBytes) * 100))
-    : 0;
+  const percentUsed = currentDrive?.percent_used != null
+    ? currentDrive.percent_used
+    : totalBytes > 0
+      ? Math.min(100, Math.max(0, (usedBytes / totalBytes) * 100))
+      : 0;
 
   // Donut Gauge SVG calculations
   const radius = 45;
@@ -40,33 +34,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
 
   return (
     <aside className="right-storage-sidebar">
-      {/* 0. Top View Switcher: Tree View / File View */}
-      {showViewToggle && (
-        <div className="right-sidebar-view-toggle">
-          <div className="view-toggle-pill">
-            <button
-              type="button"
-              className={`view-pill-btn ${activeView === 'tree' ? 'active' : ''}`}
-              onClick={() => onSelectView('tree')}
-              title="Tree View"
-            >
-              <GitFork size={13} className="view-icon" />
-              <span>Tree View</span>
-            </button>
-            <button
-              type="button"
-              className={`view-pill-btn ${activeView === 'file' ? 'active' : ''}`}
-              onClick={() => onSelectView('file')}
-              title="File View"
-            >
-              <Menu size={13} className="view-icon" />
-              <span>File View</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* 1. Drive Info Card Box */}
+      {/* Drive Info Card Box */}
       <div className="right-drive-info-card">
         {/* Header: Drive Info */}
         <div className="right-sidebar-header">
@@ -110,7 +78,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
               <span className="legend-dot used-dot" />
               <span className="metric-label">Used Space</span>
             </div>
-            <span className="metric-val">{formatBytes(usedBytes)}</span>
+            <span className="metric-val">{formatBytes(usedBytes, scanUnitFormat)}</span>
           </div>
 
           <div className="stats-metric-row">
@@ -118,12 +86,22 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
               <span className="legend-dot free-dot" />
               <span className="metric-label">Free Space</span>
             </div>
-            <span className="metric-val">{formatBytes(freeBytes)}</span>
+            <span className="metric-val">{formatBytes(freeBytes, scanUnitFormat)}</span>
           </div>
+
+          {isScanned && totalBytesScanned > 0 && (
+            <div className="stats-metric-row">
+              <div className="stats-metric-left">
+                <span className="legend-dot" style={{ backgroundColor: '#a1a1aa' }} />
+                <span className="metric-label">Scanned Match</span>
+              </div>
+              <span className="metric-val">{formatBytes(totalBytesScanned, scanUnitFormat)}</span>
+            </div>
+          )}
 
           <div className="stats-total-box">
             <span className="total-label">Total Space</span>
-            <span className="total-val">{formatBytes(totalBytes)}</span>
+            <span className="total-val">{formatBytes(totalBytes, scanUnitFormat)}</span>
           </div>
         </div>
       </div>

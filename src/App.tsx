@@ -19,6 +19,7 @@ import { TitleBar } from './components/TitleBar';
 import { StorageSidebar } from './components/StorageSidebar';
 import { RightSidebar } from './components/RightSidebar';
 import { MainContentView } from './components/MainContentView';
+import { SettingsView } from './components/SettingsView';
 import {
   DriveInfo,
   ScanProgress,
@@ -32,8 +33,10 @@ import {
   SpaceSaverResult,
   SpaceSaverCompressOptions,
   SpaceSaverCompressResult,
+  AppSettings,
+  DEFAULT_SETTINGS,
 } from './types';
-import { formatBytes } from './utils';
+import { formatBytes, setGlobalUnitFormat } from './utils';
 import './App.css';
 
 export const App: React.FC = () => {
@@ -86,7 +89,157 @@ export const App: React.FC = () => {
   const [selectedChildPaths, setSelectedChildPaths] = useState<{ [path: string]: boolean }>({});
   const [excludedChildPaths, setExcludedChildPaths] = useState<{ [path: string]: boolean }>({});
 
-  // Load drives on mount without auto-scanning
+  // User Settings state with localStorage persistence
+  const [settings, setSettings] = useState<AppSettings>(() => {
+    try {
+      const saved = localStorage.getItem('spydsk_settings');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const merged = { ...DEFAULT_SETTINGS, ...parsed };
+        setGlobalUnitFormat(merged.scanUnitFormat);
+        return merged;
+      }
+    } catch (e) {
+      console.warn('Failed to parse settings from localStorage', e);
+    }
+    setGlobalUnitFormat(DEFAULT_SETTINGS.scanUnitFormat);
+    return DEFAULT_SETTINGS;
+  });
+
+  const handleUpdateSettings = (newSettings: Partial<AppSettings>) => {
+    setSettings((prev) => {
+      const updated = { ...prev, ...newSettings };
+      try {
+        localStorage.setItem('spydsk_settings', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('Failed to persist settings', e);
+      }
+      if (newSettings.scanUnitFormat) {
+        setGlobalUnitFormat(newSettings.scanUnitFormat);
+      }
+      return updated;
+    });
+  };
+
+  const handleResetSettings = () => {
+    setSettings(DEFAULT_SETTINGS);
+    try {
+      localStorage.setItem('spydsk_settings', JSON.stringify(DEFAULT_SETTINGS));
+    } catch (e) {
+      console.warn('Failed to persist settings', e);
+    }
+    setGlobalUnitFormat(DEFAULT_SETTINGS.scanUnitFormat);
+  };
+
+  const isPathProtected = useCallback(
+    (path: string): boolean => {
+      const norm = path.toLowerCase().replace(/\\+$/, '');
+      return settings.protectedPaths.some((p) => {
+        const pNorm = p.toLowerCase().replace(/\\+$/, '');
+        return norm === pNorm || norm.startsWith(pNorm + '\\');
+      });
+    },
+    [settings.protectedPaths]
+  );
+
+  // Mode-Aware Scanning Trigger
+  const handleStartScan = useCallback(async (target?: string | React.MouseEvent) => {
+    if (isScanning) return;
+
+    // Reset granular child expansion and selections on new scan
+    setExpandedCategories({});
+    setCategoryChildren({});
+    setLoadingChildren({});
+    setSelectedChildPaths({});
+    setExcludedChildPaths({});
+
+    const scanPath = typeof target === 'string' ? target : selectedPath;
+
+    if (activeMode === 'explorer') {
+      setIsScanning(true);
+      setProgress(null);
+      setSummary(null);
+      setSelectedCategory('All');
+
+      try {
+        const result: ScanSummary = await invoke('start_scan', {
+          path: scanPath,
+          options: {
+            skip_junctions: settings.skipJunctions,
+            min_file_size_bytes: (settings.minFileSizeKb || 0) * 1024,
+            protected_paths: settings.protectedPaths,
+          },
+        });
+        setSummary(result);
+      } catch (err) {
+        console.error('Scan error:', err);
+      } finally {
+        setIsScanning(false);
+      }
+    } else if (activeMode === 'quick_clean') {
+      setIsScanning(true);
+      setPurgeSuccessMsg(null);
+      try {
+        const result: QuickCleanResult = await invoke('quick_clean_scan', { drive: scanPath });
+        setQuickCleanResult(result);
+        setSelectedCleanCategories({});
+      } catch (err) {
+        console.error('Quick clean scan error:', err);
+      } finally {
+        setIsScanning(false);
+      }
+    } else if (activeMode === 'deep_clean') {
+      setIsScanning(true);
+      setDeepPurgeSuccessMsg(null);
+      try {
+        const result: QuickCleanResult = await invoke('deep_clean_scan', { drive: scanPath });
+        setDeepCleanResult(result);
+        setSelectedDeepCleanCategories({});
+      } catch (err) {
+        console.error('Deep clean scan error:', err);
+      } finally {
+        setIsScanning(false);
+      }
+    } else if (activeMode === 'dev_clean') {
+      setIsScanning(true);
+      setDevPurgeSuccessMsg(null);
+      try {
+        const result: DevCleanResult = await invoke('dev_clean_scan', { drive: scanPath });
+        setDevCleanResult(result);
+        setSelectedDevItems({});
+      } catch (err) {
+        console.error('Dev clean scan error:', err);
+      } finally {
+        setIsScanning(false);
+      }
+    } else if (activeMode === 'duplicates') {
+      setIsScanning(true);
+      setDupPurgeSuccessMsg(null);
+      try {
+        const result: DuplicateFinderResult = await invoke('duplicate_scan', { drive: scanPath });
+        setDuplicateResult(result);
+        setSelectedDuplicateFiles({});
+      } catch (err) {
+        console.error('Duplicate scan error:', err);
+      } finally {
+        setIsScanning(false);
+      }
+    } else if (activeMode === 'space_saver') {
+      setIsScanning(true);
+      setCompressSuccessMsg(null);
+      try {
+        const result: SpaceSaverResult = await invoke('space_saver_scan', { drive: scanPath });
+        setSpaceSaverResult(result);
+        setSelectedSpaceSaverItems({});
+      } catch (err) {
+        console.error('Space saver scan error:', err);
+      } finally {
+        setIsScanning(false);
+      }
+    }
+  }, [isScanning, selectedPath, activeMode, settings.skipJunctions, settings.minFileSizeKb, settings.protectedPaths]);
+
+  // Load drives on mount (runs strictly once)
   useEffect(() => {
     const initApp = async () => {
       try {
@@ -103,7 +256,7 @@ export const App: React.FC = () => {
 
     initApp();
 
-    const unlistenPromise = listen<ScanProgress>('scan-progress', (event) => {
+    const unlistenProgress = listen<ScanProgress>('scan-progress', (event) => {
       setProgress(event.payload);
       if (event.payload.is_complete) {
         setIsScanning(false);
@@ -111,97 +264,9 @@ export const App: React.FC = () => {
     });
 
     return () => {
-      unlistenPromise.then((unlisten) => unlisten());
+      unlistenProgress.then((unlisten) => unlisten());
     };
   }, []);
-
-  // Mode-Aware Scanning Trigger
-  const handleStartScan = useCallback(async () => {
-    if (isScanning) return;
-
-    // Reset granular child expansion and selections on new scan
-    setExpandedCategories({});
-    setCategoryChildren({});
-    setLoadingChildren({});
-    setSelectedChildPaths({});
-    setExcludedChildPaths({});
-
-    if (activeMode === 'explorer') {
-      setIsScanning(true);
-      setProgress(null);
-      setSummary(null);
-      setSelectedCategory('All');
-
-      try {
-        const result: ScanSummary = await invoke('start_scan', { path: selectedPath });
-        setSummary(result);
-      } catch (err) {
-        console.error('Scan error:', err);
-      } finally {
-        setIsScanning(false);
-      }
-    } else if (activeMode === 'quick_clean') {
-      setIsScanning(true);
-      setPurgeSuccessMsg(null);
-      try {
-        const result: QuickCleanResult = await invoke('quick_clean_scan', { drive: selectedPath });
-        setQuickCleanResult(result);
-        setSelectedCleanCategories({});
-      } catch (err) {
-        console.error('Quick clean scan error:', err);
-      } finally {
-        setIsScanning(false);
-      }
-    } else if (activeMode === 'deep_clean') {
-      setIsScanning(true);
-      setDeepPurgeSuccessMsg(null);
-      try {
-        const result: QuickCleanResult = await invoke('deep_clean_scan', { drive: selectedPath });
-        setDeepCleanResult(result);
-        setSelectedDeepCleanCategories({});
-      } catch (err) {
-        console.error('Deep clean scan error:', err);
-      } finally {
-        setIsScanning(false);
-      }
-    } else if (activeMode === 'dev_clean') {
-      setIsScanning(true);
-      setDevPurgeSuccessMsg(null);
-      try {
-        const result: DevCleanResult = await invoke('dev_clean_scan', { drive: selectedPath });
-        setDevCleanResult(result);
-        setSelectedDevItems({});
-      } catch (err) {
-        console.error('Dev clean scan error:', err);
-      } finally {
-        setIsScanning(false);
-      }
-    } else if (activeMode === 'duplicates') {
-      setIsScanning(true);
-      setDupPurgeSuccessMsg(null);
-      try {
-        const result: DuplicateFinderResult = await invoke('duplicate_scan', { drive: selectedPath });
-        setDuplicateResult(result);
-        setSelectedDuplicateFiles({});
-      } catch (err) {
-        console.error('Duplicate scan error:', err);
-      } finally {
-        setIsScanning(false);
-      }
-    } else if (activeMode === 'space_saver') {
-      setIsScanning(true);
-      setCompressSuccessMsg(null);
-      try {
-        const result: SpaceSaverResult = await invoke('space_saver_scan', { drive: selectedPath });
-        setSpaceSaverResult(result);
-        setSelectedSpaceSaverItems({});
-      } catch (err) {
-        console.error('Space saver scan error:', err);
-      } finally {
-        setIsScanning(false);
-      }
-    }
-  }, [isScanning, selectedPath, activeMode]);
 
   // Expand/collapse category to view child files/subfolders
   const toggleExpandCategory = async (key: string, path: string) => {
@@ -590,6 +655,7 @@ export const App: React.FC = () => {
 
   const handleSelectDrive = (drivePath: string) => {
     setSelectedPath(drivePath);
+    setActiveMode('explorer');
     setSummary(null);
     setProgress(null);
     setSelectedCategory('All');
@@ -699,7 +765,7 @@ export const App: React.FC = () => {
   const handleCompressSpaceSaver = async () => {
     if (!spaceSaverResult || isCompressing || selectedSpaceSaverCount === 0) return;
     const pathsToCompress = spaceSaverResult.items
-      .filter((i) => selectedSpaceSaverItems[i.id])
+      .filter((i) => selectedSpaceSaverItems[i.id] && !isPathProtected(i.path))
       .map((i) => i.path);
 
     if (pathsToCompress.length === 0) return;
@@ -1628,20 +1694,27 @@ export const App: React.FC = () => {
               selectedCategory={selectedCategory}
               onSelectCategory={setSelectedCategory}
               activeView={activeView}
+              onSelectView={setActiveView}
+              settings={settings}
+              onUpdateSettings={handleUpdateSettings}
+            />
+          ) : activeMode === 'settings' ? (
+            <SettingsView
+              settings={settings}
+              onUpdateSettings={handleUpdateSettings}
+              onResetSettings={handleResetSettings}
             />
           ) : (
             renderToolView()
           )}
         </div>
 
-        {/* Right Sidebar: View Toggle & Drive Info Donut Gauge */}
+        {/* Right Sidebar: Drive Info Donut Gauge */}
         <RightSidebar
           currentDrive={currentDrive}
           totalBytesScanned={summary ? summary.total_bytes : 0}
           isScanned={isScanned}
-          activeView={activeView}
-          onSelectView={setActiveView}
-          showViewToggle={activeMode === 'explorer'}
+          scanUnitFormat={settings.scanUnitFormat}
         />
       </div>
     </div>

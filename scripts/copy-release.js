@@ -2,9 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
 
-const src = path.resolve('src-tauri/target/release/disklens.exe');
+const src = path.resolve('src-tauri/target/release/spydsk.exe');
 const distDir = path.resolve('dist');
-const dest = path.resolve('dist/DiskLens.exe');
+const dest = path.resolve('dist/Spydsk.exe');
 
 if (!fs.existsSync(distDir)) {
   fs.mkdirSync(distDir, { recursive: true });
@@ -15,9 +15,9 @@ if (fs.existsSync(src)) {
     fs.copyFileSync(src, dest);
   } catch (err) {
     if (err.code === 'EBUSY') {
-      console.log('Terminating active DiskLens instance to overwrite release binary...');
+      console.log('Terminating active Spydsk instance to overwrite release binary...');
       try {
-        execSync('taskkill /F /IM DiskLens.exe /T', { stdio: 'ignore' });
+        execSync('taskkill /F /IM Spydsk.exe /T', { stdio: 'ignore' });
       } catch {}
       fs.copyFileSync(src, dest);
     } else {
@@ -26,7 +26,7 @@ if (fs.existsSync(src)) {
   }
   const stats = fs.statSync(dest);
   const sizeMb = (stats.size / (1024 * 1024)).toFixed(2);
-  console.log(`\x1b[32m✓ Release binary successfully created:\x1b[0m dist/DiskLens.exe (${sizeMb} MB)`);
+  console.log(`\x1b[32m✓ Release binary successfully created:\x1b[0m dist/Spydsk.exe (${sizeMb} MB)`);
 } else {
   console.error(`\x1b[31m✗ Could not find release binary at:\x1b[0m ${src}`);
   process.exit(1);

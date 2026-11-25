@@ -18,6 +18,13 @@ use windows_sys::Win32::Storage::FileSystem::{
 
 use crate::models::{ExtensionStat, FileNode, ScanProgress};
 
+#[derive(serde::Deserialize, Clone, Default, Debug)]
+pub struct ScanOptions {
+    pub skip_junctions: Option<bool>,
+    pub min_file_size_bytes: Option<u64>,
+    pub protected_paths: Option<Vec<String>>,
+}
+
 #[derive(Default)]
 pub struct ScanState {
     pub nodes: Vec<FileNode>,
@@ -180,6 +187,7 @@ pub fn perform_scan<R: tauri::Runtime>(
     app_handle: &tauri::AppHandle<R>,
     target_path: String,
     cancel_flag: Arc<AtomicBool>,
+    options: Option<ScanOptions>,
 ) -> Result<ScanState, String> {
     let start_time = Instant::now();
     let root_path_buf = PathBuf::from(&target_path);
@@ -187,6 +195,24 @@ pub fn perform_scan<R: tauri::Runtime>(
     if !root_path_buf.exists() {
         return Err(format!("Path does not exist: {}", target_path));
     }
+
+    let normalized_protected: Arc<Vec<String>> = Arc::new(
+        options
+            .as_ref()
+            .and_then(|o| o.protected_paths.as_ref())
+            .map(|list| {
+                list.iter()
+                    .map(|p| p.trim().to_lowercase().trim_end_matches('\\').to_string())
+                    .filter(|p| !p.is_empty())
+                    .collect()
+            })
+            .unwrap_or_default(),
+    );
+
+    let skip_junctions = options
+        .as_ref()
+        .and_then(|o| o.skip_junctions)
+        .unwrap_or(true);
 
     let num_threads = determine_optimal_worker_threads();
     println!(
@@ -236,6 +262,8 @@ pub fn perform_scan<R: tauri::Runtime>(
         let bytes_cnt = Arc::clone(&bytes_counter);
         let last_prog = Arc::clone(&last_progress_ms);
         let app_handle_clone = app_handle.clone();
+        let prot_paths = Arc::clone(&normalized_protected);
+        let thread_skip_junctions = skip_junctions;
 
         let my_stealers: Vec<Stealer<WorkTask>> = stealers
             .iter()
@@ -307,13 +335,41 @@ pub fn perform_scan<R: tauri::Runtime>(
                                         }
                                         entry_full_path.push_str(&entry_name);
 
+                                        let is_ignored = if !prot_paths.is_empty() {
+                                            let lower_path = entry_full_path.to_lowercase();
+                                            let entry_lower = entry_name.to_lowercase();
+                                            prot_paths.iter().any(|p| {
+                                                if lower_path == *p || lower_path.starts_with(&format!("{}\\", p)) {
+                                                    return true;
+                                                }
+                                                if entry_lower == *p {
+                                                    return true;
+                                                }
+                                                let leaf = p.rsplit('\\').next().unwrap_or(p);
+                                                if entry_lower == leaf {
+                                                    return true;
+                                                }
+                                                false
+                                            })
+                                        } else {
+                                            false
+                                        };
+
+                                        if is_ignored {
+                                            if unsafe { FindNextFileW(handle, &mut find_data) } == 0 {
+                                                break;
+                                            }
+                                            continue;
+                                        }
+
                                         if is_dir {
-                                            if !is_reparse {
+                                            if !thread_skip_junctions || !is_reparse {
                                                 pending_subdirs.push((entry_name, entry_full_path, mod_time));
                                             }
                                         } else {
                                             let file_size = ((find_data.nFileSizeHigh as u64) << 32)
                                                 | (find_data.nFileSizeLow as u64);
+
                                             local_files_added += 1;
                                             local_bytes_added += file_size;
 

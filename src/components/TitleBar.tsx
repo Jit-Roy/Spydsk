@@ -67,14 +67,13 @@ export const TitleBar: React.FC = () => {
 
   return (
     <header className="custom-titlebar">
-      {/* Draggable Area with App Logo & Title */}
+      {/* Draggable Area with App Logo */}
       <div
         className="titlebar-left"
         data-tauri-drag-region
         onDoubleClick={handleTitleBarDoubleClick}
       >
-        <img src={appLogo} alt="DiskLens" className="titlebar-app-icon" data-tauri-drag-region />
-        <span className="titlebar-app-title" data-tauri-drag-region>DiskLens</span>
+        <img src={appLogo} alt="Spydsk" className="titlebar-app-icon" data-tauri-drag-region />
       </div>
 
       {/* Right Controls: Native Window Controls (Min, Max, Close) */}
